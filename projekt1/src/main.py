@@ -1,6 +1,7 @@
 import numpy as np
 from pulp import LpProblem, LpVariable, LpMaximize, lpSum, value, LpStatus
 import random
+import matplotlib.pyplot as plt
 
 def read_data(file_path: str) -> list[str]:
     with open(file_path, 'r') as file:
@@ -81,13 +82,48 @@ def create_problem(data: dict[str, list[float]], alternatives: list[dict[str, fl
                 criterion4_vars[float(evals['C4'])]
             ]
         ), f"Utility_{name}"
-    epsilon = 0.01
-    # prob += alternative_utilities['Alternative_1'] >= alternative_utilities['Alternative_2'] + epsilon, "Pref_A1_A2"
+    epsilon = LpVariable("epsilon", lowBound=0)
+    prob += alternative_utilities['Alternative_2'] >= alternative_utilities['Alternative_1'] + epsilon, "Pref_A2_A1"
+    prob += alternative_utilities['Alternative_1'] >= alternative_utilities['Alternative_3'] + epsilon, "Pref_A1_A3"
 
+    prob += epsilon, "Maximize_Epsilon"
+    prob.sense = LpMaximize
+    return prob, criterion1_values, criterion1_vars, criterion2_values, criterion2_vars, criterion3_values, criterion3_vars, criterion4_values, criterion4_vars
 
-    return prob
+def plot_results(criterion_values: list[list[float]], criterion_vars: list[dict[str, LpVariable]]):
+    fig, axes = plt.subplots(2, 2, figsize=(10, 8))
+    fig.suptitle('Partial Utility Functions for Each Criterion')
+    
+    for idx, (criterion_values, criterion_vars) in enumerate(zip(criterion_values, criterion_vars)):
+        row, col = divmod(idx, 2)
+        solver_values = [value(criterion_vars[val]) for val in criterion_values]
+        
+        axes[row, col].plot(criterion_values, solver_values, marker='o', linestyle='-', label=f'$u(g_{{C_{idx+1}}})$')
+        axes[row, col].set_xlabel(f'$g_{{C_{idx+1}}}$')
+        axes[row, col].set_ylabel(f'$u(g_{{C_{idx+1}}})$')
+        axes[row, col].set_title(f'Criterion $C_{idx+1}$')
+        axes[row, col].grid(True)
+        axes[row, col].legend()
+    
+    plt.tight_layout(rect=[0, 0, 1, 0.96])
+    plt.show()
 
 if __name__ == '__main__':
     criterions, values, alternatives = get_data('data.csv')
     alternatives = prepare_alternatives(alternatives, criterions)
-    prob = create_problem(values, alternatives)
+    prob, criterion1_values, criterion1_vars, criterion2_values, criterion2_vars, criterion3_values, criterion3_vars, criterion4_values, criterion4_vars = create_problem(values, alternatives)
+    prob.solve()
+
+    print(f"Status: {LpStatus[prob.status]}")
+    print("\nOptimal Solution:")
+    for var in prob.variables():
+        print(f"{var.name} = {value(var)}")
+
+    print("\nObjective value:", value(prob.objective))
+
+    plot_results(
+        [criterion1_values, criterion2_values, criterion3_values, criterion4_values], 
+        [criterion1_vars, criterion2_vars, criterion3_vars, criterion4_vars]
+    )
+
+    
