@@ -1,0 +1,84 @@
+% Preamble
+\documentclass[11pt]{article}
+
+% Packages
+\usepackage{amsmath}
+\usepackage[a4paper, margin=0.5in]{geometry}
+\usepackage{graphicx} % daj an 1in jak chcesz normalniejszy margines, ale kod mi się w linii nie mieści :P
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[polish]{babel}
+\usepackage{float}
+\usepackage{hyperref}
+\usepackage{cleveref}
+
+\title{Projekt 1. UTA}
+\author{Oskar Kiliańczyk 151863 \& Wojciech Kot 151876}
+\date{}
+
+% Document
+\begin{document}
+
+\maketitle
+\newpage
+
+\section{Opis informacji preferencyjnej}\label{sec:opis-informacji-preferencyjnej}
+
+Z racji że obaj wylosowaliśmy informację preferencyjną nr.\ 4, to firma przede wszystkim skupia się na preferowanej lokacji, gdzie:
+Lokalizacja R2 jest preferowana nad R1 oraz R1 nad R3.
+Jako drugie, dodatkowe kryterium przyjęliśmy sposób finansowania,
+uznając metodę F1 (kWh-fee method) jako preferowaną ponad zarówno F2 (prorata method) oraz F3 (waste-fee method).
+
+
+Pary referencyjne dobrane do naszego problemu to pary:
+    przydzielone nam odgórnie:
+    11 i 14, gdzie 14 jest preferowane ponad 11 (R2 > R1)
+    2 i 25, gdzie 2 jest preferowane ponad 25 (R1 > R3)
+    oraz wybrane przez nas:
+    11 i 17, gdzie 11 jest preferowane nad 17 (R2 > R3)
+    oraz dwie dla drugiego w ważności kryterium:
+    4 i 5, gdzie 4 jest preferowane nad 5 (R2=R2, F1 > F2)
+    4 i 6,  gdzie 4 jest preferowane nad 6 (R2=R2, F1 > F3)
+
+Na wartości wag dodaliśmy dodatkowe ograniczenia w postaci:
+- wymuszenia monotoniczności (wszystkie kryteria są typu koszt).
+- normalizacji wag (aby użyteczność idealnego wariantu wynosiła 1, a antyidealnego 0).
+- dla każdego kryterium waga idealnego wariantu nie może być większa niż 0.5 (zapewniamy brak dominującego kryterium)
+ani mniejsza niż 0.1 (zapewniamy że każde kryterium jest w jakimś stopniu ważne)
+
+
+\section{Wynik uzyskany z solvera}\label{sec:wynik-uzyskany-z-solvera}
+
+TODO wstawić wykresiki i podsumować wartości użyteczności
+(w princie pewnie przyda się posortować po użyteczności, bo tego nie zrobiłem, więc słabo się to będzie czytać)
+
+
+\section{Wyniki}\label{sec:wyniki}
+
+Wnioski - wnioski
+
+\section{Link do repozytorium}\label{sec:link-do-repo}
+Kod źródłowy w repozytorium GitHub dostępny pod linkiem: \\
+\href{https://github.com/KotZPolibudy/PUT_ISWD/tree/main/projekt1}{Repozytorium ISWD - projekt 1}.
+
+
+\section{TODOS}\label{sec:todos}
+
+**To wszystko trzeba zrobić, to jest wariant na 3**
+
+• Wynik uzyskany z solvera:
+– wartości użyteczności wszystkich wariantów zarówno referencyjnych jak i niereferencyjnych;
+– ranking wszystkich wariantów;
+– wartość funkcji celu;
+– wykresy cząstkowych funkcji użyteczności.
+
+• Krótkie podsumowanie wyników:
+– sprawdzenie zgodności wyników z podaną informacją preferencyjną;
+– sprawdzenie, czy otrzymany ranking jest spójny z informacją preferencyjną dla kilku wybranych wariantów niereferencyjnych.
+– jaka strategia została oceniona jako najlepsza i najgorsza;
+– jaki był wpływ kryteriów na ostateczny wynik.
+
+W przypadku braku istnienia spójnego modelu dla zadanej informacji preferencyjnej należy taką
+informację zamieścić w raporcie i zmienić informację preferencyjną
+
+\end{document}
