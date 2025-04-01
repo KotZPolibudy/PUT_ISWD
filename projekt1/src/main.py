@@ -59,21 +59,27 @@ def create_problem(data: dict[str, list[float]], alternatives: dict[str, dict[st
         alternative_utilities[name] = utility_var
         prob += utility_var == lpSum(criterion_vars[c][float(evals[c])] for c in data)
 
-    epsilon = LpVariable("epsilon", lowBound=0)
-    prob += epsilon
+    epsilon_loc = LpVariable("epsilon_loc", lowBound=0.0)
+    epsilon_time = LpVariable("epsilon_time", lowBound=0.0)
+    epsilon_pair = LpVariable("epsilon_pair", lowBound=0.0)
+    
+    prob += epsilon_loc
+    prob += epsilon_time
+    prob += epsilon_pair
+    
     for a1, a2 in reference_pairs:
-        prob += alternative_utilities[a2] >= alternative_utilities[a1] + epsilon
+        prob += alternative_utilities[a1] >= alternative_utilities[a2] + epsilon_pair
 
     # Czwarta grupa: Preferowana jest lokalizacja R2 nad R1 oraz R1 nad R3.
     for alt2, alt1 in zip(R2, R1):
-        prob += alternative_utilities[f"Alternative_{alt2}"] >= alternative_utilities[f"Alternative_{alt1}"] + epsilon
+        prob += alternative_utilities[f"Alternative_{alt2}"] >= alternative_utilities[f"Alternative_{alt1}"] + epsilon_loc
     for alt1, alt3 in zip(R1, R3):
-        prob += alternative_utilities[f"Alternative_{alt1}"] >= alternative_utilities[f"Alternative_{alt3}"] + epsilon
+        prob += alternative_utilities[f"Alternative_{alt1}"] >= alternative_utilities[f"Alternative_{alt3}"] + epsilon_loc
     
     # Trzecia grupa: Inwestorzy chcą jak najdłuzej utrzymywać składowisko.    
     # preferowane opcje ze scenariusza czasowego S3 nad S1 oraz S2
     for alt3, alt12 in zip(S3, S1 + S2):
-        prob += alternative_utilities[f"Alternative_{alt3}"] >= alternative_utilities[f"Alternative_{alt12}"] + epsilon
+        prob += alternative_utilities[f"Alternative_{alt3}"] >= alternative_utilities[f"Alternative_{alt12}"] + epsilon_time
         
     return prob, criterion_vars
 
@@ -104,7 +110,7 @@ if __name__ == '__main__':
     print(f"Status: {LpStatus[prob.status]}")
     # for var in prob.variables():
     #     print(f"{var.name} = {value(var)}")
-    print("\nObjective value:", value(prob.objective))
+    # print("\nObjective value:", value(prob.objective))
 
     plot_results(criterion_vars)
     
