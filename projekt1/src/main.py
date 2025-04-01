@@ -3,6 +3,19 @@ from pulp import LpProblem, LpVariable, LpMaximize, lpSum, value, LpStatus
 import random
 import matplotlib.pyplot as plt
 
+R1 = [1,2,3,10,11,12,19,20,21]
+R2 = [4,5,6,13,14,15,22,23,24]
+R3 = [7,8,9,16,17,18,25,26,27]
+
+S1 = [i for i in range(1,10)]
+S2 = [i for i in range(10,19)]
+S3 = [i for i in range(19,28)]
+
+F1 = [i for i in range(1,28) if i%3 == 1]
+F2 = [i for i in range(1,28) if i%3 == 2]
+F3 = [i for i in range(1,28) if i%3 == 0]
+
+
 def read_data(file_path: str) -> list[str]:
     with open(file_path, 'r') as file:
         data = file.readlines()
@@ -44,6 +57,12 @@ def create_problem(data: dict[str, list[float]], alternatives: list[dict[str, fl
     criterion2_vars = {val: LpVariable(f'c2_{val}', 0, 1, cat='Continuous') for val in criterion2_values}
     criterion3_vars = {val: LpVariable(f'c3_{val}', 0, 1, cat='Continuous') for val in criterion3_values}
     criterion4_vars = {val: LpVariable(f'c4_{val}', 0, 1, cat='Continuous') for val in criterion4_values}
+    
+    extremes = get_extremes(data)
+    minC1, maxC1 = extremes['C1']
+    minC2, maxC2 = extremes['C2']
+    minC3, maxC3 = extremes['C3']
+    minC4, maxC4 = extremes['C4']
 
     for i in range(len(criterion1_values) - 1):
         prob += criterion1_vars[criterion1_values[i]] <= criterion1_vars[criterion1_values[i + 1]], f'Monotonicity_C1_{i}'
@@ -54,21 +73,21 @@ def create_problem(data: dict[str, list[float]], alternatives: list[dict[str, fl
     for i in range(len(criterion4_values) - 1):
         prob += criterion4_vars[criterion4_values[i]] <= criterion4_vars[criterion4_values[i + 1]], f'Monotonicity_C4_{i}'
     
-    prob += criterion1_vars[criterion1_values[0]] == 0, "Normalization_C1_Lowest"
-    prob += criterion2_vars[criterion2_values[0]] == 0, "Normalization_C2_Lowest"
-    prob += criterion3_vars[criterion3_values[0]] == 0, "Normalization_C3_Lowest"
-    prob += criterion4_vars[criterion4_values[0]] == 0, "Normalization_C4_Lowest"
-    prob += criterion1_vars[criterion1_values[-1]] + criterion2_vars[criterion2_values[-1]] + criterion3_vars[criterion3_values[-1]] + criterion4_vars[criterion4_values[-1]] == 1, "Normalization_Criteria_Sum"
+    prob += criterion1_vars[minC1] == 0.1, "Normalization_C1_Lowest"
+    prob += criterion2_vars[minC2] == 0.1, "Normalization_C2_Lowest"
+    prob += criterion3_vars[minC3] == 0.1, "Normalization_C3_Lowest"
+    prob += criterion4_vars[minC4] == 0.1, "Normalization_C4_Lowest"
+    prob += criterion1_vars[maxC1] + criterion2_vars[maxC2] + criterion3_vars[maxC3] + criterion4_vars[maxC4] == 1, "Normalization_Criteria_Sum"
 
-    prob += criterion1_vars[criterion1_values[-1]] <= 0.75, "Weight_C1_Limit_Up"
-    prob += criterion2_vars[criterion2_values[-1]] <= 0.75, "Weight_C2_Limit_Up"
-    prob += criterion3_vars[criterion3_values[-1]] <= 0.75, "Weight_C3_Limit_Up"
-    prob += criterion4_vars[criterion4_values[-1]] <= 0.75, "Weight_C4_Limit_Up"
+    prob += criterion1_vars[maxC1] <= 0.75, "Weight_C1_Limit_Up"
+    prob += criterion2_vars[maxC2] <= 0.75, "Weight_C2_Limit_Up"
+    prob += criterion3_vars[maxC3] <= 0.75, "Weight_C3_Limit_Up"
+    prob += criterion4_vars[maxC4] <= 0.75, "Weight_C4_Limit_Up"
 
-    prob += criterion1_vars[criterion1_values[0]] >= 0.1, "Weight_C1_Limit_Down"
-    prob += criterion2_vars[criterion2_values[0]] >= 0.1, "Weight_C2_Limit_Down"
-    prob += criterion3_vars[criterion3_values[0]] >= 0.1, "Weight_C3_Limit_Down"
-    prob += criterion4_vars[criterion4_values[0]] >= 0.1, "Weight_C4_Limit_Down"
+    prob += criterion1_vars[minC1] >= 0.1, "Weight_C1_Limit_Down"
+    prob += criterion2_vars[minC2] >= 0.1, "Weight_C2_Limit_Down"
+    prob += criterion3_vars[minC3] >= 0.1, "Weight_C3_Limit_Down"
+    prob += criterion4_vars[minC4] >= 0.1, "Weight_C4_Limit_Down"
 
     alternative_utilities = {}
     for name, evals in alternatives.items():
@@ -83,8 +102,11 @@ def create_problem(data: dict[str, list[float]], alternatives: list[dict[str, fl
             ]
         ), f"Utility_{name}"
     epsilon = LpVariable("epsilon", lowBound=0)
-    prob += alternative_utilities['Alternative_2'] >= alternative_utilities['Alternative_1'] + epsilon, "Pref_A2_A1"
-    prob += alternative_utilities['Alternative_1'] >= alternative_utilities['Alternative_3'] + epsilon, "Pref_A1_A3"
+    # prob += alternative_utilities['Alternative_2'] >= alternative_utilities['Alternative_1'] + epsilon, "Pref_A2_A1"
+    # prob += alternative_utilities['Alternative_1'] >= alternative_utilities['Alternative_3'] + epsilon, "Pref_A1_A3"
+    
+    # prob += criterion1_vars[float(alternatives['Alternative_2']['C1'])] >= criterion1_vars[float(alternatives['Alternative_1']['C1'])] + epsilon, "Pref_A2_A1"
+    # prob += criterion1_vars[float(alternatives['Alternative_1']['C1'])] >= criterion1_vars[float(alternatives['Alternative_3']['C1'])] + epsilon, "Pref_A1_A3"
 
     prob += epsilon, "Maximize_Epsilon"
     prob.sense = LpMaximize
