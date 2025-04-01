@@ -7,19 +7,17 @@ R1 = [i for i in range(1, 28) if (i - 1) % 9 < 3]
 R2 = [i for i in range(1, 28) if 3 <= (i - 1) % 9 < 6]
 R3 = [i for i in range(1, 28) if 6 <= (i - 1) % 9 < 9]
 
-S1 = list(range(1, 10))
-S2 = list(range(10, 19))
-S3 = list(range(19, 28))
+S1 = list(range(1,10))
+S2 = list(range(10,19))
+S3 = list(range(19,28))
 
-F1 = [i for i in range(1, 28) if i % 3 == 1]
-F2 = [i for i in range(1, 28) if i % 3 == 2]
-F3 = [i for i in range(1, 28) if i % 3 == 0]
-
+F1 = [i for i in range(1, 28) if i%3 == 1]
+F2 = [i for i in range(1, 28) if i%3 == 2]
+F3 = [i for i in range(1, 28) if i%3 == 0]
 
 def read_data(file_path: str) -> list[str]:
     with open(file_path, 'r') as file:
         return file.readlines()
-
 
 def process_data(data: list[str]) -> tuple[list[str], dict[str, list[float]], list[list[str]]]:
     data = [line.strip().split(',') for line in data]
@@ -29,14 +27,11 @@ def process_data(data: list[str]) -> tuple[list[str], dict[str, list[float]], li
     data = {criterion: list(map(float, values)) for criterion, values in zip(criterions, data)}
     return criterions, data, alternatives
 
-
 def get_data(file_path: str) -> tuple[list[str], dict[str, list[float]], list[list[str]]]:
     return process_data(read_data(file_path))
 
-
 def get_extremes(data: dict[str, list[float]]) -> dict[str, tuple[float, float]]:
     return {criterion: (min(values), max(values)) for criterion, values in data.items()}
-
 
 def prepare_alternatives(alternatives: list[list[str]], criterions: list[str]) -> dict[str, dict[str, str]]:
     return {
@@ -44,9 +39,7 @@ def prepare_alternatives(alternatives: list[list[str]], criterions: list[str]) -
         for alt in alternatives
     }
 
-
-def create_problem(data: dict[str, list[float]], alternatives: dict[str, dict[str, float]], reference_pairs) -> tuple[
-        LpProblem, dict[str, dict[str, LpVariable]]]:
+def create_problem(data: dict[str, list[float]], alternatives: dict[str, dict[str, float]], reference_pairs) -> tuple[LpProblem, dict[str, dict[str, LpVariable]]]:
     prob = LpProblem("UTA_Method", LpMaximize)
 
     criterion_vars = {c: {v: LpVariable(f"{c}_{v}", 0, 1) for v in sorted(set(data[c]))} for c in data}
@@ -58,7 +51,7 @@ def create_problem(data: dict[str, list[float]], alternatives: dict[str, dict[st
         min_val, max_val = extremes[c]
         prob += criterion_vars[c][max_val] == 0.1
         prob += criterion_vars[c][min_val] <= 0.5
-    prob += lpSum(criterion_vars[c][min_val] for c, (min_val, _) in extremes.items()) == 1
+    prob += lpSum(criterion_vars[c][min_val] for c, (min_val, _) in extremes.items()) == 1    
 
     alternative_utilities = {}
     for name, evals in alternatives.items():
@@ -69,35 +62,32 @@ def create_problem(data: dict[str, list[float]], alternatives: dict[str, dict[st
     epsilon_loc = LpVariable("epsilon_loc", lowBound=0.0)
     epsilon_time = LpVariable("epsilon_time", lowBound=0.0)
     epsilon_pair = LpVariable("epsilon_pair", lowBound=0.0)
-
-    prob += epsilon_loc
-    prob += epsilon_time
-    prob += epsilon_pair
-
+    epsilon = 0.01
+    
+    prob += epsilon_loc + epsilon_time + epsilon_pair
+    
+    # epsilon_var = LpVariable("epsilon", lowBound=0.0)
+    # prob += epsilon_var
+    
     for a1, a2 in reference_pairs:
-        prob += alternative_utilities[a1] >= alternative_utilities[a2] + epsilon_pair
+        prob += alternative_utilities[a1] >= alternative_utilities[a2] + epsilon
 
     # Czwarta grupa: Preferowana jest lokalizacja R2 nad R1 oraz R1 nad R3.
     for alt2, alt1 in zip(R2, R1):
-        prob += alternative_utilities[f"Alternative_{alt2}"] >= alternative_utilities[
-            f"Alternative_{alt1}"] + epsilon_loc
+        prob += alternative_utilities[f"Alternative_{alt2}"] >= alternative_utilities[f"Alternative_{alt1}"] + epsilon_loc + epsilon
     for alt1, alt3 in zip(R1, R3):
-        prob += alternative_utilities[f"Alternative_{alt1}"] >= alternative_utilities[
-            f"Alternative_{alt3}"] + epsilon_loc
-
-    # Trzecia grupa: Inwestorzy chcą jak najdłużej utrzymywać składowisko.
+        prob += alternative_utilities[f"Alternative_{alt1}"] >= alternative_utilities[f"Alternative_{alt3}"] + epsilon_loc + epsilon
+        
+    # Trzecia grupa: Inwestorzy chcą jak najdłuzej utrzymywać składowisko.    
     # preferowane opcje ze scenariusza czasowego S3 nad S1 oraz S2
     for alt3, alt12 in zip(S3, S1 + S2):
-        prob += alternative_utilities[f"Alternative_{alt3}"] >= alternative_utilities[
-            f"Alternative_{alt12}"] + epsilon_time
-
+        prob += alternative_utilities[f"Alternative_{alt3}"] >= alternative_utilities[f"Alternative_{alt12}"] + epsilon_time + epsilon
+        
     return prob, criterion_vars
-
 
 def select_reference_pairs(alternatives: dict[str, dict[str, str]], k=5) -> list[tuple[str, str]]:
     alt_keys = list(alternatives.keys())
     return random.sample([(a1, a2) for a1 in alt_keys for a2 in alt_keys if a1 != a2], k)
-
 
 def plot_results(criterion_vars):
     fig, axes = plt.subplots(2, 2, figsize=(10, 8))
@@ -111,12 +101,18 @@ def plot_results(criterion_vars):
     plt.tight_layout()
     plt.show()
 
-
 if __name__ == '__main__':
     criterions, values, alternatives = get_data('data.csv')
     alternatives = prepare_alternatives(alternatives, criterions)
-    reference_pairs = select_reference_pairs(alternatives)
-
+    # reference_pairs = select_reference_pairs(alternatives)
+    reference_pairs = [
+        (f"Alternative_2", f"Alternative_25"),
+        (f"Alternative_11", f"Alternative_14"),
+        # (f"Alternative_5", f"Alternative_6"),
+        # (f"Alternative_7", f"Alternative_8"),
+        # (f"Alternative_9", f"Alternative_10"),
+    ] + select_reference_pairs(alternatives, 3)
+    
     prob, criterion_vars = create_problem(values, alternatives, reference_pairs)
     prob.solve()
 
@@ -126,12 +122,12 @@ if __name__ == '__main__':
     print("\nObjective value:", value(prob.objective))
 
     plot_results(criterion_vars)
-
+    
     utilities = {var.name[:-8]: value(var) for var in prob.variables() if var.name.endswith("_Utility")}
     utilities = dict(sorted(utilities.items(), key=lambda item: item[1], reverse=True))
     for name, utility in utilities.items():
         print(f"Utility of {name}: {utility}")
-
+    
     print("\nReference pairs:")
     for a1, a2 in reference_pairs:
         print(f"Utility of {a1} >= Utility of {a2}: {utilities[a1]} >= {utilities[a2]}")
