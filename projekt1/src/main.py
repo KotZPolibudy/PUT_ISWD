@@ -3,9 +3,9 @@ from pulp import LpProblem, LpVariable, LpMaximize, lpSum, value, LpStatus
 import random
 import matplotlib.pyplot as plt
 
-R1 = [1,2,3,10,11,12,19,20,21]
-R2 = [4,5,6,13,14,15,22,23,24]
-R3 = [7,8,9,16,17,18,25,26,27]
+R1 = [i for i in range(1, 28) if (i - 1) % 9 < 3]
+R2 = [i for i in range(1, 28) if 3 <= (i - 1) % 9 < 6]
+R3 = [i for i in range(1, 28) if 6 <= (i - 1) % 9 < 9]
 
 S1 = list(range(1,10))
 S2 = list(range(10,19))
@@ -47,11 +47,11 @@ def create_problem(data: dict[str, list[float]], alternatives: dict[str, dict[st
     for c in data:
         values = sorted(set(data[c]))
         for i in range(len(values) - 1):
-            prob += criterion_vars[c][values[i]] <= criterion_vars[c][values[i + 1]]
+            prob += criterion_vars[c][values[i]] >= criterion_vars[c][values[i + 1]]
         min_val, max_val = extremes[c]
-        prob += criterion_vars[c][min_val] == 0.1
-        prob += criterion_vars[c][max_val] <= 0.75
-    prob += lpSum(criterion_vars[c][max_val] for c, (_, max_val) in extremes.items()) == 1    
+        prob += criterion_vars[c][max_val] == 0.1
+        prob += criterion_vars[c][min_val] <= 0.5
+    prob += lpSum(criterion_vars[c][min_val] for c, (min_val, _) in extremes.items()) == 1    
 
     alternative_utilities = {}
     for name, evals in alternatives.items():
@@ -110,7 +110,7 @@ if __name__ == '__main__':
     print(f"Status: {LpStatus[prob.status]}")
     # for var in prob.variables():
     #     print(f"{var.name} = {value(var)}")
-    # print("\nObjective value:", value(prob.objective))
+    print("\nObjective value:", value(prob.objective))
 
     plot_results(criterion_vars)
     
