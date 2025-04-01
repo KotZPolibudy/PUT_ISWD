@@ -115,5 +115,10 @@ if __name__ == '__main__':
     plot_results(criterion_vars)
     
     utilities = {var.name[:-8]: value(var) for var in prob.variables() if var.name.endswith("_Utility")}
+    utilities = dict(sorted(utilities.items(), key=lambda item: item[1], reverse=True))
+    for name, utility in utilities.items():
+        print(f"Utility of {name}: {utility}")
+    
+    print("\nReference pairs:")
     for a1, a2 in reference_pairs:
         print(f"Utility of {a1} >= Utility of {a2}: {utilities[a1]} >= {utilities[a2]}")
