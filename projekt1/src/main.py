@@ -62,24 +62,26 @@ def create_problem(data: dict[str, list[float]], alternatives: dict[str, dict[st
     epsilon_loc = LpVariable("epsilon_loc", lowBound=0.0)
     epsilon_time = LpVariable("epsilon_time", lowBound=0.0)
     epsilon_pair = LpVariable("epsilon_pair", lowBound=0.0)
+    epsilon = 0.01
     
-    prob += epsilon_loc
-    prob += epsilon_time
-    prob += epsilon_pair
+    prob += epsilon_loc + epsilon_time + epsilon_pair
+    
+    # epsilon_var = LpVariable("epsilon", lowBound=0.0)
+    # prob += epsilon_var
     
     for a1, a2 in reference_pairs:
-        prob += alternative_utilities[a1] >= alternative_utilities[a2] + epsilon_pair
+        prob += alternative_utilities[a1] >= alternative_utilities[a2] + epsilon
 
     # Czwarta grupa: Preferowana jest lokalizacja R2 nad R1 oraz R1 nad R3.
     for alt2, alt1 in zip(R2, R1):
-        prob += alternative_utilities[f"Alternative_{alt2}"] >= alternative_utilities[f"Alternative_{alt1}"] + epsilon_loc
+        prob += alternative_utilities[f"Alternative_{alt2}"] >= alternative_utilities[f"Alternative_{alt1}"] + epsilon_loc + epsilon
     for alt1, alt3 in zip(R1, R3):
-        prob += alternative_utilities[f"Alternative_{alt1}"] >= alternative_utilities[f"Alternative_{alt3}"] + epsilon_loc
-    
+        prob += alternative_utilities[f"Alternative_{alt1}"] >= alternative_utilities[f"Alternative_{alt3}"] + epsilon_loc + epsilon
+        
     # Trzecia grupa: Inwestorzy chcą jak najdłuzej utrzymywać składowisko.    
     # preferowane opcje ze scenariusza czasowego S3 nad S1 oraz S2
     for alt3, alt12 in zip(S3, S1 + S2):
-        prob += alternative_utilities[f"Alternative_{alt3}"] >= alternative_utilities[f"Alternative_{alt12}"] + epsilon_time
+        prob += alternative_utilities[f"Alternative_{alt3}"] >= alternative_utilities[f"Alternative_{alt12}"] + epsilon_time + epsilon
         
     return prob, criterion_vars
 
@@ -102,7 +104,14 @@ def plot_results(criterion_vars):
 if __name__ == '__main__':
     criterions, values, alternatives = get_data('data.csv')
     alternatives = prepare_alternatives(alternatives, criterions)
-    reference_pairs = select_reference_pairs(alternatives)
+    # reference_pairs = select_reference_pairs(alternatives)
+    reference_pairs = [
+        (f"Alternative_2", f"Alternative_25"),
+        (f"Alternative_11", f"Alternative_14"),
+        # (f"Alternative_5", f"Alternative_6"),
+        # (f"Alternative_7", f"Alternative_8"),
+        # (f"Alternative_9", f"Alternative_10"),
+    ] + select_reference_pairs(alternatives, 3)
     
     prob, criterion_vars = create_problem(values, alternatives, reference_pairs)
     prob.solve()
