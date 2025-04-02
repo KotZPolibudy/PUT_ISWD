@@ -39,7 +39,63 @@ def prepare_alternatives(alternatives: list[list[str]], criterions: list[str]) -
         for alt in alternatives
     }
 
-def create_problem(data: dict[str, list[float]], alternatives: dict[str, dict[str, float]], reference_pairs) -> tuple[LpProblem, dict[str, dict[str, LpVariable]]]:
+def uta(data: dict[str, list[float]], alternatives: dict[str, dict[str, float]], reference_pairs) -> tuple[LpProblem, dict[str, dict[str, LpVariable]]]:
+    prob, criterion_vars, alternative_utilities = create_problem(data, alternatives)
+    epsilon = LpVariable("epsilon", lowBound=1e-6)
+    prob += epsilon, "Maximize_Epsilon"
+    
+    for a1, a2 in reference_pairs:
+        prob += alternative_utilities[a1] >= alternative_utilities[a2] + epsilon, f"Reference_{a1}_{a2}"
+
+    return prob, criterion_vars
+
+def uta_gms(data: dict[str, list[float]], alternatives: dict[str, dict[str, float]], reference_pairs) -> tuple[LpProblem, dict[str, dict[str, LpVariable]]]:
+    prob, criterion_vars, alternative_utilities = create_problem(data, alternatives)
+    epsilon = LpVariable("epsilon", lowBound=1e-6)
+    sigma = LpVariable("sigma", lowBound=0.0)
+    prob += epsilon - sigma, "Maximize_Strong_Weak_Preference"
+
+    for a1, a2 in reference_pairs:
+        prob += alternative_utilities[a1] >= alternative_utilities[a2] + epsilon, f"Necessary_Preference_{a1}_{a2}"
+        prob += alternative_utilities[a1] >= alternative_utilities[a2] - sigma, f"Possible_Preference_{a1}_{a2}"
+
+    return prob, criterion_vars, alternative_utilities
+
+def check_preference(prob_template, alternative_utilities, a1, a2, minimize=True):
+    prob = prob_template.deepcopy()
+    diff = LpVariable(f"diff_{a1}_{a2}", None, None)
+    
+    prob += diff == alternative_utilities[a1] - alternative_utilities[a2]
+    
+    if minimize:
+        prob += diff, f"Minimize_U({a1})_minus_U({a2})"
+    else:
+        prob += -diff, f"Maximize_U({a1})_minus_U({a2})"
+
+    prob.solve()
+    return value(diff)
+
+def analyze_resistance(prob_template, alternatives):
+    necessary_prefs = []
+    possible_prefs = []
+
+    alt_keys = list(alternatives.keys())
+
+    for i in range(len(alt_keys)):
+        for j in range(i + 1, len(alt_keys)):
+            a1, a2 = alt_keys[i], alt_keys[j]
+
+            necessary_diff = check_preference(prob_template, alternatives, a1, a2, minimize=True)
+            if necessary_diff >= 0:
+                necessary_prefs.append((a1, a2))
+
+            possible_diff = check_preference(prob_template, alternatives, a1, a2, minimize=False)
+            if possible_diff >= 0:
+                possible_prefs.append((a1, a2))
+
+    return necessary_prefs, possible_prefs
+
+def create_problem(data: dict[str, list[float]], alternatives: dict[str, dict[str, float]]) -> tuple[LpProblem, dict[str, dict[str, LpVariable]]]:
     prob = LpProblem("UTA_Method", LpMaximize)
 
     criterion_vars = {c: {v: LpVariable(f"{c}_{v}", 0, 1) for v in sorted(set(data[c]))} for c in data}
@@ -49,8 +105,9 @@ def create_problem(data: dict[str, list[float]], alternatives: dict[str, dict[st
         for i in range(len(values) - 1):
             prob += criterion_vars[c][values[i]] >= criterion_vars[c][values[i + 1]]
         min_val, max_val = extremes[c]
-        prob += criterion_vars[c][max_val] == 0.1
+        prob += criterion_vars[c][min_val] >= 0.1
         prob += criterion_vars[c][min_val] <= 0.5
+        prob += criterion_vars[c][max_val] == 0.0
     prob += lpSum(criterion_vars[c][min_val] for c, (min_val, _) in extremes.items()) == 1    
 
     alternative_utilities = {}
@@ -59,31 +116,7 @@ def create_problem(data: dict[str, list[float]], alternatives: dict[str, dict[st
         alternative_utilities[name] = utility_var
         prob += utility_var == lpSum(criterion_vars[c][float(evals[c])] for c in data)
 
-    epsilon_loc = LpVariable("epsilon_loc", lowBound=0.0)
-    epsilon_time = LpVariable("epsilon_time", lowBound=0.0)
-    epsilon_pair = LpVariable("epsilon_pair", lowBound=0.0)
-    epsilon = 0.01
-    
-    prob += epsilon_loc + epsilon_time + epsilon_pair
-    
-    # epsilon_var = LpVariable("epsilon", lowBound=0.0)
-    # prob += epsilon_var
-    
-    for a1, a2 in reference_pairs:
-        prob += alternative_utilities[a1] >= alternative_utilities[a2] + epsilon
-
-    # Czwarta grupa: Preferowana jest lokalizacja R2 nad R1 oraz R1 nad R3.
-    for alt2, alt1 in zip(R2, R1):
-        prob += alternative_utilities[f"Alternative_{alt2}"] >= alternative_utilities[f"Alternative_{alt1}"] + epsilon_loc + epsilon
-    for alt1, alt3 in zip(R1, R3):
-        prob += alternative_utilities[f"Alternative_{alt1}"] >= alternative_utilities[f"Alternative_{alt3}"] + epsilon_loc + epsilon
-        
-    # Trzecia grupa: Inwestorzy chcą jak najdłuzej utrzymywać składowisko.    
-    # preferowane opcje ze scenariusza czasowego S3 nad S1 oraz S2
-    for alt3, alt12 in zip(S3, S1 + S2):
-        prob += alternative_utilities[f"Alternative_{alt3}"] >= alternative_utilities[f"Alternative_{alt12}"] + epsilon_time + epsilon
-        
-    return prob, criterion_vars
+    return prob, criterion_vars, alternative_utilities
 
 def select_reference_pairs(alternatives: dict[str, dict[str, str]], k=5) -> list[tuple[str, str]]:
     alt_keys = list(alternatives.keys())
@@ -98,6 +131,9 @@ def plot_results(criterion_vars):
         axes[row, col].plot(x, y, marker='o', linestyle='-', label=f'$u(g_{{{c}}})$')
         axes[row, col].set_title(f'Criterion {c}')
         axes[row, col].legend()
+        axes[row, col].grid(True)
+        axes[row, col].set_xlabel(f'$g_{{{c}}}$')
+        axes[row, col].set_ylabel(f'$u(g_{{{c}}})$')
     plt.tight_layout()
     plt.show()
 
@@ -106,14 +142,14 @@ if __name__ == '__main__':
     alternatives = prepare_alternatives(alternatives, criterions)
     # reference_pairs = select_reference_pairs(alternatives)
     reference_pairs = [
-        (f"Alternative_2", f"Alternative_25"),
-        (f"Alternative_11", f"Alternative_14"),
-        # (f"Alternative_5", f"Alternative_6"),
-        # (f"Alternative_7", f"Alternative_8"),
-        # (f"Alternative_9", f"Alternative_10"),
-    ] + select_reference_pairs(alternatives, 3)
+        (f"Alternative_14", f"Alternative_11"), # 151863 (R2 > R1)
+        (f"Alternative_2", f"Alternative_25"), # 151879 (R1 > R3)
+        (f"Alternative_11", f"Alternative_17"), # R2 >> R3
+        (f"Alternative_4", f"Alternative_5"), # F1 > F2
+        (f"Alternative_4", f"Alternative_6"), # F1 > F3
+    ] # + select_reference_pairs(alternatives, 3)
     
-    prob, criterion_vars = create_problem(values, alternatives, reference_pairs)
+    prob, criterion_vars = uta(values, alternatives, reference_pairs)
     prob.solve()
 
     print(f"Status: {LpStatus[prob.status]}")
@@ -131,3 +167,20 @@ if __name__ == '__main__':
     print("\nReference pairs:")
     for a1, a2 in reference_pairs:
         print(f"Utility of {a1} >= Utility of {a2}: {utilities[a1]} >= {utilities[a2]}")
+
+    print("\nGMS Method")
+    prob, criterion_vars, alternative_utilities = uta_gms(values, alternatives, reference_pairs)
+    prob.solve()
+
+    necessary_prefs, possible_prefs = analyze_resistance(prob, alternative_utilities)
+    print("\nNecessary Preferences:")
+    for a1, a2 in necessary_prefs:
+        print(f"Necessary pref: {a1} >= {a2}")
+    print("\nPossible Preferences:")
+    for a1, a2 in possible_prefs:
+        print(f"Possible pref: {a1} >= {a2}")      
+
+    print(f"Status: {LpStatus[prob.status]}")
+    # for var in prob.variables():
+    #     print(f"{var.name} = {value(var)}")
+    print("\nObjective value:", value(prob.objective))
