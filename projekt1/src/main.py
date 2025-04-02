@@ -55,7 +55,6 @@ def uta_gms(data: dict[str, list[float]], alternatives: dict[str, dict[str, floa
     necessary_prefs = []
     possible_prefs = []
     alt_keys = list(alternatives.keys())
-    
     for i in range(len(alt_keys)):
         for j in range(len(alt_keys)):
             if i == j:
@@ -65,14 +64,26 @@ def uta_gms(data: dict[str, list[float]], alternatives: dict[str, dict[str, floa
             epsilon = 0.01
             for b1, b2 in reference_pairs:
                 prob += alternative_utilities[b1] >= alternative_utilities[b2] + epsilon, f"Reference_{b1}_{b2}"
-            sigma = LpVariable("sigma")
+            sigma = LpVariable("sigma", lowBound=-100.0)
             prob += sigma, "Minimize_Sigma"
-            diff = LpVariable(f"diff_{a1}_{a2}", None, None)
-            prob += diff == alternative_utilities[a1] - alternative_utilities[a2] - sigma, f"Diff_{a1}_{a2}"
+            prob += sigma == alternative_utilities[a1] - alternative_utilities[a2], f"Diff_{a1}_{a2}"
             prob.solve()
-            if value(diff) >= 0:
+            if value(sigma) >= 0:
                 necessary_prefs.append((a1, a2))
-            else:
+    for i in range(len(alt_keys)):
+        for j in range(len(alt_keys)):
+            if i == j:
+                continue
+            a1, a2 = alt_keys[i], alt_keys[j]
+            prob, criterion_vars, alternative_utilities = create_problem(data, alternatives, LpMaximize)
+            epsilon = 0.01
+            for b1, b2 in reference_pairs:
+                prob += alternative_utilities[b1] >= alternative_utilities[b2] + epsilon, f"Reference_{b1}_{b2}"
+            sigma = LpVariable("sigma", lowBound=-100.0)
+            prob += sigma, "Maximize_Sigma"
+            prob += sigma == alternative_utilities[a1] - alternative_utilities[a2], f"Diff_{a1}_{a2}"
+            prob.solve()
+            if value(sigma) >= 0:
                 possible_prefs.append((a1, a2))
                 
     return necessary_prefs, possible_prefs
@@ -115,7 +126,6 @@ def analyze_resistance(data, alternatives, reference_pairs):
             if i == j:
                 continue
             a1, a2 = alt_keys[i], alt_keys[j]
-
             necessary_diff = check_preference(prob, alternative_utilities[a1], alternative_utilities[a2], minimize=True)
             if necessary_diff >= 0:
                 necessary_prefs.append((a1, a2))
@@ -160,6 +170,11 @@ def plot_results(criterion_vars):
         x = sorted(vars.keys())
         y = [value(vars[v]) for v in x]
         axes[row, col].plot(x, y, marker='o', linestyle='-', label=f'$u(g_{{{c}}})$')
+        max_y = max(y)
+        yticks = axes[row, col].get_yticks()
+        if max_y not in yticks:
+            yticks = list(yticks) + [max_y]
+            axes[row, col].set_yticks(yticks)
         axes[row, col].set_title(f'Criterion {c}')
         axes[row, col].legend()
         axes[row, col].grid(True)
@@ -177,6 +192,7 @@ def plot_hasse_diagram(necessary_prefs):
     pos = nx.spring_layout(G)
     nx.draw(G, pos, with_labels=True, node_size=30, node_color="lightblue", font_size=10, edge_color="black", arrows=True)
     plt.title("Diagram Hasse'go dla preferencji koniecznych")
+    plt.savefig('hasse.png')
     plt.show()
 
 if __name__ == '__main__':
@@ -209,12 +225,12 @@ if __name__ == '__main__':
     for a1, a2 in reference_pairs:
         print(f"Utility of {a1} >= Utility of {a2}: {value(alternative_utilities[a1])} >= {value(alternative_utilities[a2])}")
     
-    # necessary_prefs, possible_prefs = uta_gms(values, alternatives, reference_pairs)
-    # print("\nNecessary Preferences:")
-    # for a1, a2 in necessary_prefs:
-    #     print(f"Necessary pref: {a1} >= {a2}")
-    # print("\nPossible Preferences:")
-    # for a1, a2 in possible_prefs:
-    #     print(f"Possible pref: {a1} >= {a2}")
+    necessary_prefs, possible_prefs = uta_gms(values, alternatives, reference_pairs)
+    print("\nNecessary Preferences:")
+    for a1, a2 in necessary_prefs:
+        print(f"Necessary pref: {a1} >= {a2}")
+    print("\nPossible Preferences:")
+    for a1, a2 in possible_prefs:
+        print(f"Possible pref: {a1} >= {a2}")
 
-    # plot_hasse_diagram(necessary_prefs)
+    plot_hasse_diagram(necessary_prefs)

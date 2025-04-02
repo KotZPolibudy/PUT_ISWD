@@ -25,20 +25,28 @@
 \section{Opis informacji preferencyjnej}\label{sec:opis-informacji-preferencyjnej}
 
 Z racji, że obaj wylosowaliśmy informację preferencyjną nr.\ 4, to firma przede wszystkim skupia się na preferowanej lokacji, gdzie:
-Lokalizacja R2 jest preferowana nad R1 oraz R1 nad R3.
-Jako drugie, dodatkowe kryterium przyjęliśmy sposób finansowania,
-uznając metodę F1 (kWh-fee method) jako preferowaną ponad zarówno F2 (prorata method) oraz F3 (waste-fee method).
-
+\begin{itemize}
+\item Lokalizacja R2 jest preferowana nad R1 oraz R1 nad R3.
+\item Jako drugie, dodatkowe kryterium przyjęliśmy sposób finansowania, uznając metodę F1 (kWh-fee method) jako preferowaną ponad zarówno F2 (prorata method) oraz F3 (waste-fee method).
+\end{itemize}
 
 Pary referencyjne dobrane do naszego problemu to pary:
-    przydzielone nam odgórnie:
-    11 i 14, gdzie 14 jest preferowane ponad 11 (R2 > R1)
-    2 i 25, gdzie 2 jest preferowane ponad 25 (R1 > R3)
-    oraz wybrane przez nas:
-    11 i 17, gdzie 11 jest preferowane nad 17 (R2 > R3)
-    oraz dwie dla drugiego w ważności kryterium:
-    4 i 5, gdzie 4 jest preferowane nad 5 (R2=R2, F1 > F2)
-    4 i 6,  gdzie 4 jest preferowane nad 6 (R2=R2, F1 > F3)
+\begin{itemize}
+\item przydzielone nam odgórnie:
+\begin{itemize}
+\item 11 i 14, gdzie 14 jest preferowane ponad 11 (R2 > R1)
+\item 2 i 25, gdzie 2 jest preferowane ponad 25 (R1 > R3)
+\end{itemize}
+\item oraz wybrane przez nas:
+\begin{itemize}
+\item 11 i 17, gdzie 11 jest preferowane nad 17 (R2 > R3)
+\end{itemize}
+\item oraz dwie dla drugiego w ważności kryterium:
+\begin{itemize}
+\item 4 i 5, gdzie 4 jest preferowane nad 5 (R2=R2, F1 > F2)
+\item 4 i 6,  gdzie 4 jest preferowane nad 6 (R2=R2, F1 > F3)
+\end{itemize}
+\end{itemize}
 
 Na wartości wag dodaliśmy dodatkowe ograniczenia w postaci:
 \begin{itemize}
@@ -95,7 +103,7 @@ Tabela ~\ref{tab:utility_values} pokazuje uszeregowany ranking oraz wyniki waria
     \label{tab:utility_values}
 \end{table}
 
-Celem optymalizacji była maksymalizacja dystansu między silnie preferowanymi elementami. Uzyskana wartość funkcji celu $\epsilon = 0.18$.
+Celem optymalizacji była maksymalizacja najmniejszego dystansu między alternatywami silnie preferowanymi. Uzyskana wartość funkcji celu $\epsilon = 0.18$.
 
 \section{Wyniki}\label{sec:wyniki}
 Jeżeli chodzi o nasze pary referencyjne sytuacja wygląda następująco:
