@@ -198,7 +198,7 @@ def plot_hasse_diagram(necessary_prefs: list[tuple[str, str]], alternative_utili
     plt.title("Diagram Hasse'go dla preferencji koniecznych")
     plt.tight_layout()
     plt.savefig(name)
-    plt.show()
+    # plt.show()
 
 
 if __name__ == '__main__':
