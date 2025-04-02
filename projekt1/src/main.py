@@ -1,5 +1,5 @@
 import numpy as np
-from pulp import LpProblem, LpVariable, LpMaximize, lpSum, value, LpStatus
+from pulp import LpProblem, LpVariable, LpMaximize, LpMinimize, lpSum, value, LpStatus
 import random
 import matplotlib.pyplot as plt
 import networkx as nx
@@ -41,27 +41,52 @@ def prepare_alternatives(alternatives: list[list[str]], criterions: list[str]) -
         for alt in alternatives
     }
 
-def uta(data: dict[str, list[float]], alternatives: dict[str, dict[str, float]], reference_pairs) -> tuple[LpProblem, dict[str, dict[str, LpVariable]]]:
-    prob, criterion_vars, alternative_utilities = create_problem(data, alternatives)
+def uta(data: dict[str, list[float]], alternatives: dict[str, dict[str, float]], reference_pairs) -> tuple[LpProblem, dict[str, dict[str, LpVariable]], dict[str, LpVariable]]:
+    prob, criterion_vars, alternative_utilities = create_problem(data, alternatives, LpMaximize)
     epsilon = LpVariable("epsilon", lowBound=1e-6)
     prob += epsilon, "Maximize_Epsilon"
     
     for a1, a2 in reference_pairs:
         prob += alternative_utilities[a1] >= alternative_utilities[a2] + epsilon, f"Reference_{a1}_{a2}"
 
-    return prob, criterion_vars
+    return prob, criterion_vars, alternative_utilities
 
 def uta_gms(data: dict[str, list[float]], alternatives: dict[str, dict[str, float]], reference_pairs) -> tuple[LpProblem, dict[str, dict[str, LpVariable]]]:
-    prob, criterion_vars, alternative_utilities = create_problem(data, alternatives)
-    epsilon = LpVariable("epsilon", lowBound=1e-6)
-    sigma = LpVariable("sigma", lowBound=0.0)
-    prob += epsilon - sigma, "Maximize_Strong_Weak_Preference"
+    necessary_prefs = []
+    possible_prefs = []
+    alt_keys = list(alternatives.keys())
+    
+    for i in range(len(alt_keys)):
+        for j in range(len(alt_keys)):
+            if i == j:
+                continue
+            a1, a2 = alt_keys[i], alt_keys[j]
+            prob, criterion_vars, alternative_utilities = create_problem(data, alternatives, LpMinimize)
+            epsilon = 0.01
+            for b1, b2 in reference_pairs:
+                prob += alternative_utilities[b1] >= alternative_utilities[b2] + epsilon, f"Reference_{b1}_{b2}"
+            sigma = LpVariable("sigma")
+            prob += sigma, "Minimize_Sigma"
+            diff = LpVariable(f"diff_{a1}_{a2}", None, None)
+            prob += diff == alternative_utilities[a1] - alternative_utilities[a2] - sigma, f"Diff_{a1}_{a2}"
+            prob.solve()
+            if value(diff) >= 0:
+                necessary_prefs.append((a1, a2))
+            else:
+                possible_prefs.append((a1, a2))
+                
+    return necessary_prefs, possible_prefs
+    
+    # prob, criterion_vars, alternative_utilities = create_problem(data, alternatives)
+    # epsilon = LpVariable("epsilon", lowBound=1e-6)
+    # sigma = LpVariable("sigma", lowBound=0.0)
+    # prob += epsilon - sigma, "Maximize_Strong_Weak_Preference"
 
-    for a1, a2 in reference_pairs:
-        prob += alternative_utilities[a1] >= alternative_utilities[a2] + epsilon, f"Necessary_Preference_{a1}_{a2}"
-        prob += alternative_utilities[a1] >= alternative_utilities[a2] - sigma, f"Possible_Preference_{a1}_{a2}"
+    # for a1, a2 in reference_pairs:
+    #     prob += alternative_utilities[a1] >= alternative_utilities[a2] + epsilon, f"Necessary_Preference_{a1}_{a2}"
+    #     prob += alternative_utilities[a1] >= alternative_utilities[a2] - sigma, f"Possible_Preference_{a1}_{a2}"
 
-    return prob, criterion_vars, alternative_utilities
+    # return prob, criterion_vars, alternative_utilities
 
 def check_preference(prob_template, utility1, utility2, minimize=True):
     prob = deepcopy(prob_template)
@@ -101,8 +126,8 @@ def analyze_resistance(data, alternatives, reference_pairs):
 
     return necessary_prefs, possible_prefs
 
-def create_problem(data: dict[str, list[float]], alternatives: dict[str, dict[str, float]]) -> tuple[LpProblem, dict[str, dict[str, LpVariable]]]:
-    prob = LpProblem("UTA_Method", LpMaximize)
+def create_problem(data: dict[str, list[float]], alternatives: dict[str, dict[str, float]], minmax: int = LpMaximize) -> tuple[LpProblem, dict[str, dict[str, LpVariable]], dict[str, LpVariable]]:
+    prob = LpProblem("UTA_Method", minmax)
 
     criterion_vars = {c: {v: LpVariable(f"{c}_{v}", 0, 1) for v in sorted(set(data[c]))} for c in data}
     extremes = get_extremes(data)
@@ -141,7 +166,8 @@ def plot_results(criterion_vars):
         axes[row, col].set_xlabel(f'$g_{{{c}}}$')
         axes[row, col].set_ylabel(f'$u(g_{{{c}}})$')
     plt.tight_layout()
-    plt.show()
+    plt.savefig('uta.png')
+    # plt.show()
 
 def plot_hasse_diagram(necessary_prefs):
     G = nx.DiGraph()
@@ -165,7 +191,7 @@ if __name__ == '__main__':
         (f"Alternative_4", f"Alternative_6"), # F1 > F3
     ] # + select_reference_pairs(alternatives, 3)
     
-    prob, criterion_vars = uta(values, alternatives, reference_pairs)
+    prob, criterion_vars, alternative_utilities = uta(values, alternatives, reference_pairs)
     prob.solve()
 
     print(f"Status: {LpStatus[prob.status]}")
@@ -175,23 +201,20 @@ if __name__ == '__main__':
 
     plot_results(criterion_vars)
     
-    utilities = {var.name[:-8]: value(var) for var in prob.variables() if var.name.endswith("_Utility")}
-    utilities = dict(sorted(utilities.items(), key=lambda item: item[1], reverse=True))
-    for name, utility in utilities.items():
-        print(f"Utility of {name}: {utility}")
+    for name, utility in sorted(alternative_utilities.items(), key=lambda item: value(item[1]), reverse=True):
+        weighted_utility = {c: value(criterion_vars[c][float(alternatives[name][c])]) for c in criterions}
+        print(f"Utility of {name}: {weighted_utility}, summary: {value(utility)}")
     
     print("\nReference pairs:")
     for a1, a2 in reference_pairs:
-        print(f"Utility of {a1} >= Utility of {a2}: {utilities[a1]} >= {utilities[a2]}")
-
-    print("\nGMS Method")
-    prob, criterion_vars, alternative_utilities = uta_gms(values, alternatives, reference_pairs)
-    necessary_prefs, possible_prefs = analyze_resistance(values, alternatives, reference_pairs)
-    print("\nNecessary Preferences:")
-    for a1, a2 in necessary_prefs:
-        print(f"Necessary pref: {a1} >= {a2}")
-    print("\nPossible Preferences:")
-    for a1, a2 in possible_prefs:
-        print(f"Possible pref: {a1} >= {a2}")      
+        print(f"Utility of {a1} >= Utility of {a2}: {value(alternative_utilities[a1])} >= {value(alternative_utilities[a2])}")
+    
+    # necessary_prefs, possible_prefs = uta_gms(values, alternatives, reference_pairs)
+    # print("\nNecessary Preferences:")
+    # for a1, a2 in necessary_prefs:
+    #     print(f"Necessary pref: {a1} >= {a2}")
+    # print("\nPossible Preferences:")
+    # for a1, a2 in possible_prefs:
+    #     print(f"Possible pref: {a1} >= {a2}")
 
     # plot_hasse_diagram(necessary_prefs)
