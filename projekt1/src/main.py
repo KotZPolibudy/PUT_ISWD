@@ -2,6 +2,8 @@ import numpy as np
 from pulp import LpProblem, LpVariable, LpMaximize, lpSum, value, LpStatus
 import random
 import matplotlib.pyplot as plt
+import networkx as nx
+from copy import deepcopy
 
 R1 = [i for i in range(1, 28) if (i - 1) % 9 < 3]
 R2 = [i for i in range(1, 28) if 3 <= (i - 1) % 9 < 6]
@@ -61,11 +63,11 @@ def uta_gms(data: dict[str, list[float]], alternatives: dict[str, dict[str, floa
 
     return prob, criterion_vars, alternative_utilities
 
-def check_preference(prob_template, alternative_utilities, a1, a2, minimize=True):
-    prob = prob_template.deepcopy()
+def check_preference(prob_template, utility1, utility2, minimize=True):
+    prob = deepcopy(prob_template)
     diff = LpVariable(f"diff_{a1}_{a2}", None, None)
     
-    prob += diff == alternative_utilities[a1] - alternative_utilities[a2]
+    prob += diff == utility1 - utility2
     
     if minimize:
         prob += diff, f"Minimize_U({a1})_minus_U({a2})"
@@ -75,21 +77,25 @@ def check_preference(prob_template, alternative_utilities, a1, a2, minimize=True
     prob.solve()
     return value(diff)
 
-def analyze_resistance(prob_template, alternatives):
+def analyze_resistance(data, alternatives, reference_pairs):
+    prob, criterion_vars, alternative_utilities = uta_gms(data, alternatives, reference_pairs)
+    
     necessary_prefs = []
     possible_prefs = []
 
     alt_keys = list(alternatives.keys())
 
     for i in range(len(alt_keys)):
-        for j in range(i + 1, len(alt_keys)):
+        for j in range(len(alt_keys)):
+            if i == j:
+                continue
             a1, a2 = alt_keys[i], alt_keys[j]
 
-            necessary_diff = check_preference(prob_template, alternatives, a1, a2, minimize=True)
+            necessary_diff = check_preference(prob, alternative_utilities[a1], alternative_utilities[a2], minimize=True)
             if necessary_diff >= 0:
                 necessary_prefs.append((a1, a2))
 
-            possible_diff = check_preference(prob_template, alternatives, a1, a2, minimize=False)
+            possible_diff = check_preference(prob, alternative_utilities[a1], alternative_utilities[a2], minimize=False)
             if possible_diff >= 0:
                 possible_prefs.append((a1, a2))
 
@@ -137,6 +143,16 @@ def plot_results(criterion_vars):
     plt.tight_layout()
     plt.show()
 
+def plot_hasse_diagram(necessary_prefs):
+    G = nx.DiGraph()
+    G.add_edges_from(necessary_prefs)
+
+    plt.figure(figsize=(8, 6))
+    pos = nx.spring_layout(G)
+    nx.draw(G, pos, with_labels=True, node_size=30, node_color="lightblue", font_size=10, edge_color="black", arrows=True)
+    plt.title("Diagram Hasse'go dla preferencji koniecznych")
+    plt.show()
+
 if __name__ == '__main__':
     criterions, values, alternatives = get_data('data.csv')
     alternatives = prepare_alternatives(alternatives, criterions)
@@ -170,9 +186,7 @@ if __name__ == '__main__':
 
     print("\nGMS Method")
     prob, criterion_vars, alternative_utilities = uta_gms(values, alternatives, reference_pairs)
-    prob.solve()
-
-    necessary_prefs, possible_prefs = analyze_resistance(prob, alternative_utilities)
+    necessary_prefs, possible_prefs = analyze_resistance(values, alternatives, reference_pairs)
     print("\nNecessary Preferences:")
     for a1, a2 in necessary_prefs:
         print(f"Necessary pref: {a1} >= {a2}")
@@ -180,7 +194,4 @@ if __name__ == '__main__':
     for a1, a2 in possible_prefs:
         print(f"Possible pref: {a1} >= {a2}")      
 
-    print(f"Status: {LpStatus[prob.status]}")
-    # for var in prob.variables():
-    #     print(f"{var.name} = {value(var)}")
-    print("\nObjective value:", value(prob.objective))
+    # plot_hasse_diagram(necessary_prefs)
