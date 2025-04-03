@@ -58,6 +58,7 @@ ani mniejsza niż 0.1 (zapewniamy że każde kryterium jest w jakimś stopniu wa
 
 
 \section{Wynik uzyskany z solvera}\label{sec:wynik-uzyskany-z-solvera}
+\subsection{UTA}
 \begin{figure}[H]
 	\centering
 	\includegraphics[scale=0.6]{uta.png}
@@ -138,30 +139,75 @@ Widać zależności:
 
 Warto zauważyć, że otrzymanie najwyższej możliwej użyteczności częściowej dla kryterium C3 w wysokości $0.5$ już dawał możliwość uzyskania 11 pozycji z 27 w klasyfikacji ogólnej. Pomimo, że użyteczność na tym kryterium spada jest możliwość uzyskania wysokich, w stosunku do całej użyteczności globalnej, wyników. 
 
+\subsection{UTA-GMS i diagram Hasse'ego}
+W celu uzyskania relacji koniecznych dodano nowe ograniczenie. Prócz typowych ograniczeń związanych z definicją problemu dodajemy nową zmienną $\sigma$, która będzie minimalizowana. Dla każdej pary wariantów minimalizujemy różnicę pomiędzy ich użytecznościami globalnymi i rozwiązujemy problem. Jeżeli jego wartość jest większa lub równa 0, oznacza to że relacja $A_i$ jest koniecznie preferowane nad $A_j$. Po przejściu przez każdą możliwą parę wariantów uzyskujemy pełną listę relacji koniecznie preferowanych. Z tej listy generujemy diagram Hasse'ego.
+\begin{figure}[H]
+	\centering
+	\includegraphics[scale=0.6]{hasse.png}
+\end{figure}
+
+W naszym przypadku liczba takich relacji koniecznie preferowanych jest równa aż 50, stąd trudności z dobrą wizualizacją diagramu. Jesteśmy w stanie zaobserwować podobne efekty, które widzieliśmy w użytecznościach globalnych standardowego problemu UTA. Można zaobserwować ,,wyższość'' alternatyw 10 i 4. Dodatkowo alternatywy numer 8 i 5 przewyższają wiele innych. Może być to spowodowane maksymalną użytecznością częściową dla kryteriów C2, C3 i C4. Można obserwować liczne alternatywy będące przewyższane, których użyteczności globalne są niskie i znajdują się na dole tabeli ~\ref{tab:utility_values}
+
+\subsection{Reprezentatywna funkcja użyteczności}
+\begin{figure}[H]
+	\centering
+	\includegraphics[scale=0.6]{representative_function.png}
+\end{figure}
+Zasadniczą różnicą, którą widać na pierwszy rzut oka względem wersji UTA, to zmiana drastyczna wag. Kryterium C1 jest teraz bardziej znaczące, lecz tylko dla wariantów najlepszych, dla reszty z nich jest znacznie mniej nagradzająca. Krterium C3 nie jest już na maksymalnym poziomie wartości funkcji użyteczności 0.5. Zamiast tego straciło znacznie na swojej wartości, zachowując jednak swój kształt. Kryterium 4 jest teraz bardziej znaczące i nagradza znacznie praktycznie wszystkie alternatywy.
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|c|c|c|c|c|c|}
+        \hline
+        Alternatywa & C1  & C2  & C3  & C4  & $\Sigma$ \\
+        \hline
+        10 & 0.0875 & 0.00 & 0.10 & 0.31875 & 0.50625 \\
+        22 & 0.40625 & -0.00 & 0.10 & 0.00 & 0.50625 \\
+        4  & 0.075 & -0.00 & 0.10 & 0.31875 & 0.49375 \\
+        5  & 0.0125 & 0.05625 & 0.08125 & 0.33125 & 0.48125 \\
+        8  & 0.00625 & 0.05625 & 0.0875 & 0.33125 & 0.48125 \\
+        7  & 0.10 & 0.00 & 0.10 & 0.26875 & 0.46875 \\
+        12 & 0.00 & 0.11875 & 0.00 & 0.35 & 0.46875 \\
+        14 & 0.00625 & 0.05625 & 0.08125 & 0.325 & 0.46875 \\
+        15 & 0.00 & 0.14375 & 0.00 & 0.325 & 0.46875 \\
+        23 & 0.025 & 0.11875 & 0.00 & 0.325 & 0.46875 \\
+        24 & 0.00 & 0.14375 & 0.00 & 0.325 & 0.46875 \\
+        11 & 0.01875 & 0.00 & 0.0875 & 0.35 & 0.45625 \\
+        16 & 0.0875 & 0.00 & 0.10 & 0.26875 & 0.45625 \\
+        18 & 0.00 & 0.125 & 0.00 & 0.33125 & 0.45625 \\
+        20 & 0.00625 & 0.125 & 0.00 & 0.325 & 0.45625 \\
+        1  & 0.025 & 0.00 & 0.10 & 0.31875 & 0.44375 \\
+        2  & 0.00625 & 0.00 & 0.0875 & 0.35 & 0.44375 \\
+        3  & 0.00 & 0.05625 & 0.05625 & 0.33125 & 0.44375 \\
+        6  & 0.00 & 0.1125 & 0.00 & 0.33125 & 0.44375 \\
+        9  & 0.00625 & 0.10625 & 0.00 & 0.33125 & 0.44375 \\
+        13 & 0.075 & 0.00 & 0.10 & 0.26875 & 0.44375 \\
+        17 & 0.00625 & 0.05625 & 0.05 & 0.33125 & 0.44375 \\
+        19 & 0.34375 & -0.00 & 0.10 & 0.00 & 0.44375 \\
+        21 & 0.00 & 0.11875 & 0.00 & 0.325 & 0.44375 \\
+        26 & 0.00625 & 0.11875 & 0.00 & 0.31875 & 0.44375 \\
+        27 & 0.00 & 0.125 & 0.00 & 0.31875 & 0.44375 \\
+        25 & 0.40625 & 0.00 & 0.00 & 0.00 & 0.40625 \\
+        \hline
+    \end{tabular}
+    \caption{Funkcja reprezentatywna użyteczności}
+    \label{tab:representative_utility}
+\end{table}
+
+Obserwując wyniki z tabeli ~\ref{tab:representative_utility} można zaobserwować, że reprezentatywna funkcja użyteczności sprowadza globalną użyteczność alternatyw, to jest różnice między poszczególnymi parami, do minimum. Rozstrzał wartości jest nieznaczny. Można zaobserwować, że alternatywy z najwyższą użytecznością globalną dla problemu z zadania 3 mają również tutaj zachowaną wysoką użyteczność globalną. To samo tyczy się alternatyw o najniższej użyteczności globalnej. Alternatywy znajdujące się w środku rankingu mogły zmienić swoją pozycję, lecz w ograniczonym stopniu, a różnice pomiędzy poszczególnymi alternatywami (ich użytecznościami globalnymi) jest niewielki.
+
+Jeżeli chodzi o nasze pary referencyjne sytuacja wygląda następująco:
+\begin{itemize}
+\item Alternatywa 14 $\geq$ Alternatywa 11: $0.46875 \geq 0.45625$
+\item Alternatywa 2 $\geq$ Alternatywa 25: $0.44375 \geq 0.40625$
+\item Alternatywa 11 $\geq$ Alternatywa 17: $0.45625 \geq 0.44375$
+\item Alternatywa 4 $\geq$ Alternatywa 5: $0.49375 \geq 0.48125$
+\item Alternatywa 4 $\geq$ Alternatywa 6: $0.49375 \geq 0.44375$
+\end{itemize}
+
 \section{Link do repozytorium}\label{sec:link-do-repo}
 Kod źródłowy w repozytorium GitHub dostępny pod linkiem: \\
 \href{https://github.com/KotZPolibudy/PUT_ISWD/tree/main/projekt1}{Repozytorium ISWD - projekt 1}.
 
-
-\section{TODOS}\label{sec:todos}
-
-**To wszystko trzeba zrobić, to jest wariant na 3**
-
-• Wynik uzyskany z solvera:
-– wartości użyteczności wszystkich wariantów zarówno referencyjnych jak i niereferencyjnych;
-– ranking wszystkich wariantów;
-– wartość funkcji celu;
-– wykresy cząstkowych funkcji użyteczności.
-
-• Krótkie podsumowanie wyników:
-– sprawdzenie zgodności wyników z podaną informacją preferencyjną;
-– sprawdzenie, czy otrzymany ranking jest spójny z informacją preferencyjną dla kilku wybranych wariantów niereferencyjnych.
-– jaka strategia została oceniona jako najlepsza i najgorsza;
-– jaki był wpływ kryteriów na ostateczny wynik.
-
-W przypadku braku istnienia spójnego modelu dla zadanej informacji preferencyjnej należy taką
-informację zamieścić w raporcie i zmienić informację preferencyjną
-
-Potencjalnie wyrzucić link do repo, bo chyba kod się wysyła osobno?
 
 \end{document}
