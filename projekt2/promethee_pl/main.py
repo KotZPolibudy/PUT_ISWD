@@ -4,7 +4,7 @@ import click
 import numpy as np
 import pandas as pd
 
-from promethee_pl.utils import (
+from projekt2.promethee_pl.utils import (
     load_dataset,
     load_preference_information,
     display_ranking,

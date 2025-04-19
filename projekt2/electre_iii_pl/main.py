@@ -4,7 +4,7 @@ import click
 import numpy as np
 import pandas as pd
 
-from electre_iii_pl.utils import (
+from projekt2.electre_iii_pl.utils import (
     load_dataset,
     load_preference_information,
     display_ranking,
