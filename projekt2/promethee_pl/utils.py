@@ -3,6 +3,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+import matplotlib
+matplotlib.use('Agg')
 from matplotlib import pyplot as plt
 import networkx as nx
 from networkx.drawing.nx_agraph import graphviz_layout
@@ -88,4 +90,8 @@ def display_ranking(ranking: pd.DataFrame, title: str) -> None:
         node_color="none",
         bbox=dict(facecolor="white", edgecolor="black"),
     )
-    plt.show()
+    
+    if not Path("output").exists():
+        Path("output").mkdir()
+    plt.savefig(f"output/{title}.png", format="png")
+    plt.close()
