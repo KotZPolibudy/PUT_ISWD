@@ -1,0 +1,7 @@
+Alternative,ITA,BEL,GER,SWE,AUT,FRA
+ITA,True,True,True,True,False,True
+BEL,False,True,False,False,False,False
+GER,False,False,True,False,False,False
+SWE,False,True,True,True,False,False
+AUT,False,True,True,True,True,True
+FRA,False,True,True,True,False,True
