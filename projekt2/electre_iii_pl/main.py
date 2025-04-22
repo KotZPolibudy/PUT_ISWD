@@ -194,14 +194,16 @@ def descending_distillation(
     0- otherwise
     """
     A = alternatives.copy()
-    P = pd.DataFrame(index=alternatives, columns=alternatives, data=0)
+    P = pd.DataFrame(0, index=alternatives, columns=alternatives)
+    alt_map = {alt: i for i, alt in enumerate(alternatives)}
 
     while len(A) > 0:
-        non_diag_elements = credibility_index[np.triu_indices_from(credibility_index, k=1)]
-        lambda_k = np.max(non_diag_elements)
+        indices = [alt_map[a] for a in A]
+        submatrix = credibility_index[np.ix_(indices, indices)]
 
+        lambda_k = np.max(submatrix[np.triu_indices(len(A), k=1)])
         sk = alpha * lambda_k + beta
-        lambda_k_next = np.max(np.where(credibility_index < lambda_k - sk, credibility_index, 0))
+        lambda_k_next = np.max(np.where(submatrix < lambda_k - sk, submatrix, 0))
 
         if lambda_k == 0:
             P.loc[A, A] = 1
@@ -209,73 +211,66 @@ def descending_distillation(
 
         strength = pd.Series(0, index=A)
         weakness = pd.Series(0, index=A)
-        quality = pd.Series(0, index=A)
 
-        for i in range(len(A)):
-            for j in range(len(A)):
+        for i, ai in enumerate(A):
+            for j, aj in enumerate(A):
                 if i == j:
                     continue
-                a, b = A[i], A[j]
-                if credibility_index[i, j] > lambda_k and credibility_index[i, j] > credibility_index[j, i] + alpha * credibility_index[i, j] + beta:
-                    P.loc[a, b] = 1
-                    strength[a] += 1
-                    weakness[b] += 1
+                pij = submatrix[i, j]
+                pji = submatrix[j, i]
+                if pij > lambda_k_next and pij > pji + alpha * pij + beta:
+                    strength[ai] += 1
+                    weakness[aj] += 1
 
         quality = strength - weakness
         Dk1 = quality[quality == quality.max()].index
 
+        # destylacja wewnętrzna
         if len(Dk1) > 1:
-            lambda_kh = lambda_k
-            Dh_prev = Dk1.copy()
-
+            Dh = Dk1.copy()
+            lambda_kh = lambda_k_next
             while True:
+                matrix_indices = [alt_map[a] for a in Dh]
+                sub_submatrix = credibility_index[np.ix_(matrix_indices, matrix_indices)]
                 skh = alpha * lambda_kh + beta
-                matrix_indices = [alternatives.get_loc(alt) for alt in Dh_prev]
-                submatrix = credibility_index[np.ix_(matrix_indices, matrix_indices)]
+                lambda_kh1 = np.max(np.where(sub_submatrix < lambda_kh - skh, sub_submatrix, 0))
 
-                non_diag = submatrix[np.triu_indices(len(Dh_prev), k=1)]
-                lambda_kh1 = np.max(non_diag[non_diag < lambda_kh - skh], initial=0)
+                strength = pd.Series(0, index=Dh)
+                weakness = pd.Series(0, index=Dh)
 
-                if lambda_kh == 0:
-                    DkF = Dh_prev
-                    break
-
-                strength = pd.Series(0, index=Dh_prev)
-                weakness = pd.Series(0, index=Dh_prev)
-
-                for i in range(len(Dh_prev)):
-                    for j in range(len(Dh_prev)):
+                for i, ai in enumerate(Dh):
+                    for j, aj in enumerate(Dh):
                         if i == j:
                             continue
-                        a, b = Dh_prev[i], Dh_prev[j]
-                        val_ab = credibility_index[alternatives.get_loc(a), alternatives.get_loc(b)]
-                        val_ba = credibility_index[alternatives.get_loc(b), alternatives.get_loc(a)]
-
-                        if val_ab > lambda_kh and val_ab > val_ba + alpha * val_ab + beta:
-                            strength[a] += 1
-                            weakness[b] += 1
+                        pij = credibility_index[alt_map[ai], alt_map[aj]]
+                        pji = credibility_index[alt_map[aj], alt_map[ai]]
+                        if pij > lambda_kh1 and pij > pji + alpha * pij + beta:
+                            strength[ai] += 1
+                            weakness[aj] += 1
 
                 quality = strength - weakness
-                Dh = quality[quality == quality.max()].index
+                new_Dh = quality[quality == quality.max()].index
 
-                if len(Dh) == 1:
-                    DkF = Dh
+                if len(new_Dh) == 1 or lambda_kh1 == 0:
+                    DkF = new_Dh
                     break
 
+                Dh = new_Dh
                 lambda_kh = lambda_kh1
-                Dh_prev = Dh
         else:
             DkF = Dk1
 
-        P.loc[DkF, DkF] = 1
+        for a in DkF:
+            for b in A:
+                if a == b:
+                    P.loc[a, b] = 1
+                elif b not in DkF:
+                    P.loc[a, b] = 1
+                    P.loc[b, a] = 0
+            for b in DkF:
+                P.loc[a, b] = 1
+
         A = A.difference(DkF)
-
-        if len(A) == 0:
-            break
-
-        indices = [alternatives.get_loc(alt) for alt in A]
-        credibility_index = credibility_index[np.ix_(indices, indices)]
-        alternatives = A
 
     return P
 
@@ -299,16 +294,20 @@ def ascending_distillation(
     0- otherwise
     """
     A = alternatives.copy()
-    P = pd.DataFrame(index=alternatives, columns=alternatives, data=0)
-    while len(A) > 0:
-        non_diag_elements = credibility_index[np.triu_indices_from(credibility_index, k=1)]
-        if non_diag_elements.size == 0:
-            lambda_k = 0
-        else:
-            lambda_k = np.max(non_diag_elements)
+    P = pd.DataFrame(0, index=alternatives, columns=alternatives)
+    alt_map = {alt: i for i, alt in enumerate(alternatives)}
 
+    while len(A) > 0:
+        indices = [alt_map[a] for a in A]
+        submatrix = credibility_index[np.ix_(indices, indices)]
+
+        if len(A) == 1:
+            P.loc[A, A] = 1
+            break
+        
+        lambda_k = np.max(submatrix[np.triu_indices(len(A), k=1)])
         sk = alpha * lambda_k + beta
-        lambda_k_next = np.max(np.where(credibility_index < lambda_k - sk, credibility_index, 0))
+        lambda_k_next = np.max(np.where(submatrix < lambda_k - sk, submatrix, 0))
 
         if lambda_k == 0:
             P.loc[A, A] = 1
@@ -316,74 +315,66 @@ def ascending_distillation(
 
         strength = pd.Series(0, index=A)
         weakness = pd.Series(0, index=A)
-        quality = pd.Series(0, index=A)
 
-        for i in range(len(A)):
-            for j in range(len(A)):
+        for i, ai in enumerate(A):
+            for j, aj in enumerate(A):
                 if i == j:
                     continue
-                a, b = A[i], A[j]
-                if credibility_index[i, j] > lambda_k_next and credibility_index[i, j] > credibility_index[j, i] + alpha * credibility_index[i, j] + beta:
-                    P.loc[a, b] = 1
-                    strength[a] += 1
-                    weakness[b] += 1
+                pij = submatrix[i, j]
+                pji = submatrix[j, i]
+                if pij > lambda_k_next and pij > pji + alpha * pij + beta:
+                    strength[ai] += 1
+                    weakness[aj] += 1
 
         quality = strength - weakness
         Dk1 = quality[quality == quality.min()].index
 
+        # destylacja wewnętrzna
         if len(Dk1) > 1:
+            Dh = Dk1.copy()
             lambda_kh = lambda_k_next
-            Dh_prev = Dk1.copy()
-
             while True:
+                matrix_indices = [alt_map[a] for a in Dh]
+                sub_submatrix = credibility_index[np.ix_(matrix_indices, matrix_indices)]
                 skh = alpha * lambda_kh + beta
-                matrix_indices = [alternatives.get_loc(alt) for alt in Dh_prev]
-                submatrix = credibility_index[np.ix_(matrix_indices, matrix_indices)]
+                lambda_kh1 = np.max(np.where(sub_submatrix < lambda_kh - skh, sub_submatrix, 0))
 
-                non_diag = submatrix[np.triu_indices(len(Dh_prev), k=1)]
-                filtered = non_diag[non_diag < lambda_kh - skh]
-                lambda_kh1 = np.max(filtered) if filtered.size > 0 else 0
+                strength = pd.Series(0, index=Dh)
+                weakness = pd.Series(0, index=Dh)
 
-                if lambda_kh1 == 0:
-                    DkF = Dh_prev
-                    break
-
-                strength = pd.Series(0, index=Dh_prev)
-                weakness = pd.Series(0, index=Dh_prev)
-
-                for i in range(len(Dh_prev)):
-                    for j in range(len(Dh_prev)):
+                for i, ai in enumerate(Dh):
+                    for j, aj in enumerate(Dh):
                         if i == j:
                             continue
-                        a, b = Dh_prev[i], Dh_prev[j]
-                        val_ab = credibility_index[alternatives.get_loc(a), alternatives.get_loc(b)]
-                        val_ba = credibility_index[alternatives.get_loc(b), alternatives.get_loc(a)]
-
-                        if val_ab > lambda_kh1 and val_ab > val_ba + alpha * val_ab + beta:
-                            strength[a] += 1
-                            weakness[b] += 1
+                        pij = credibility_index[alt_map[ai], alt_map[aj]]
+                        pji = credibility_index[alt_map[aj], alt_map[ai]]
+                        if pij > lambda_kh1 and pij > pji + alpha * pij + beta:
+                            strength[ai] += 1
+                            weakness[aj] += 1
 
                 quality = strength - weakness
-                Dh = quality[quality == quality.min()].index
+                new_Dh = quality[quality == quality.min()].index
 
-                if len(Dh) == 1:
-                    DkF = Dh
+                if len(new_Dh) == 1 or lambda_kh1 == 0:
+                    DkF = new_Dh
                     break
 
+                Dh = new_Dh
                 lambda_kh = lambda_kh1
-                Dh_prev = Dh
         else:
             DkF = Dk1
+            
+        for a in DkF:
+            for b in A:
+                if a == b:
+                    P.loc[a, b] = 1
+                elif b not in DkF:
+                    P.loc[b, a] = 1
+                    P.loc[a, b] = 0
+            for b in DkF:
+                P.loc[a, b] = 1
 
-        P.loc[DkF, DkF] = 1
         A = A.difference(DkF)
-
-        if len(A) == 0:
-            break
-
-        indices = [alternatives.get_loc(alt) for alt in A]
-        credibility_index = credibility_index[np.ix_(indices, indices)]
-        alternatives = A
 
     return P
 
