@@ -181,10 +181,10 @@ def create_complete_ranking(net_flow: pd.Series) -> pd.DataFrame:
         for j in range(len(net_flow)):
             if i == j:
                 continue
-            if net_flow[i] > net_flow[j]:
+            if net_flow.iloc[i] > net_flow.iloc[j]:
                 outranking_matrix.loc[net_flow.index[i], net_flow.index[j]] = 1
                 outranking_matrix.loc[net_flow.index[j], net_flow.index[i]] = 0
-            elif net_flow[i] < net_flow[j]:
+            elif net_flow.iloc[i] < net_flow.iloc[j]:
                 outranking_matrix.loc[net_flow.index[i], net_flow.index[j]] = 0
                 outranking_matrix.loc[net_flow.index[j], net_flow.index[i]] = 1
             else:

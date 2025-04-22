@@ -15,3 +15,15 @@ python -m pip install --config-settings="--global-option=build_ext" `
 cd projekt2
 python -m electre_iii_pl.main ./electre_iii_pl/data/lecture
 python -m promethee_pl.main ./promethee_pl/data/lecture
+
+Jeżeli chcesz wykonać na swoim zbiorze danych przygotowanym (z określonymi kryteriami dla wybranych kolumn i określonym ziarnie losowania):
+cd projekt2
+python create_dataset.py
+python -m electre_iii_pl.main ./electre_iii_pl/data/own
+python -m promethee_pl.main ./promethee_pl/data/own
+
+lub dla prostoty:
+cd projekt2
+python create_dataset.py; python -m electre_iii_pl.main ./electre_iii_pl/data/own; python -m promethee_pl.main ./promethee_pl/data/own
+
+Preferencje (ich progi i wagi kryteriów) są ustalone dla całego zbioru i nie wymagają zmian.

@@ -1,5 +1,5 @@
 Criterion,q,p,v,k,type
-G1,0.5,1.5,4,4,gain
-G2,5.0,10.0,25,3,gain
-G3,5.0,15.0,30,1,gain
-G4,1000.0,4000.0,8000,2,cost
+sunlight_hours,0.3,0.8,2.0,4,gain
+pesticide_usage_ml,2,6,15,2,cost
+rainfall_mm,10,25,70,2,gain
+yield_kg_per_hectare,150,500,1500,3,gain
