@@ -72,7 +72,7 @@ def display_ranking(ranking: pd.DataFrame, title: str) -> None:
         for i in others:
             g.remove_node(i)
 
-        names_mapping[first] = "\n".join(node_group)
+        names_mapping[first] = ",".join(node_group)
 
     g = nx.relabel_nodes(g, names_mapping)
     g = nx.transitive_reduction(g)
