@@ -30,18 +30,24 @@ def calculate_marginal_preference_matrix(
     for k, criterion in enumerate(dataset.columns):
         qk = preference_information.loc[criterion, "q"]
         pk = preference_information.loc[criterion, "p"]
+        crit_type = preference_information.loc[criterion, "type"]
 
         for i in range(n_alternatives):
             for j in range(n_alternatives):
                 if i == j:
-                    marginal_pref_matrix[i, j, k] = 1
+                    marginal_pref_matrix[i, j, k] = 0
                     continue
                 
-                dik = dataset.iloc[i, k] - dataset.iloc[j, k]
-
+                if crit_type == "gain":
+                    dik = dataset.iloc[i, k] - dataset.iloc[j, k]
+                elif crit_type == "cost":
+                    dik = dataset.iloc[j, k] - dataset.iloc[i, k]
+                else:
+                    raise ValueError(f"Unknown criterion type: {crit_type}")
+                    
                 if dik >= pk:
                     pref = 1
-                if dik <= qk:
+                elif dik <= qk:
                     pref = 0
                 else:
                     pref = (dik - qk) / (pk - qk)
@@ -64,15 +70,16 @@ def calculate_comprehensive_preference_index(
     """
     n_alternatives = marginal_preference_matrix.shape[0]
     weights = preference_information["k"].values
-
+    weights = weights / np.sum(weights)
+    
     comprehensive_index = np.zeros((n_alternatives, n_alternatives))
 
     for i in range(n_alternatives):
         for j in range(n_alternatives):
             if i == j:
-                comprehensive_index[i, j] = 1
                 continue
-            comprehensive_index[i, j] = np.sum(marginal_preference_matrix[i, j, :] * weights)
+            else:
+                comprehensive_index[i, j] = np.sum(marginal_preference_matrix[i, j, :] * weights)
 
     return comprehensive_index
 
@@ -165,16 +172,24 @@ def create_complete_ranking(net_flow: pd.Series) -> pd.DataFrame:
     1- if for the give pair [i, j] the alternative i is preferred over j or i is indifferent from j
     0- otherwise
     """
-    sorted_alternatives = net_flow.sort_values(ascending=False).index
-
     outranking_matrix = pd.DataFrame(
-        0, index=sorted_alternatives, columns=sorted_alternatives
+        0, index=net_flow.index, columns=net_flow.index
     )
+    np.fill_diagonal(outranking_matrix.values, 1)
 
-    for i in range(len(sorted_alternatives)):
-        for j in range(i + 1, len(sorted_alternatives)):
-            outranking_matrix.loc[sorted_alternatives[i], sorted_alternatives[j]] = 1
-            outranking_matrix.loc[sorted_alternatives[j], sorted_alternatives[i]] = 0
+    for i in range(len(net_flow)):
+        for j in range(len(net_flow)):
+            if i == j:
+                continue
+            if net_flow[i] > net_flow[j]:
+                outranking_matrix.loc[net_flow.index[i], net_flow.index[j]] = 1
+                outranking_matrix.loc[net_flow.index[j], net_flow.index[i]] = 0
+            elif net_flow[i] < net_flow[j]:
+                outranking_matrix.loc[net_flow.index[i], net_flow.index[j]] = 0
+                outranking_matrix.loc[net_flow.index[j], net_flow.index[i]] = 1
+            else:
+                outranking_matrix.loc[net_flow.index[i], net_flow.index[j]] = 1
+                outranking_matrix.loc[net_flow.index[j], net_flow.index[i]] = 1
 
     return outranking_matrix
 
@@ -185,31 +200,45 @@ def main(dataset_path: str) -> None:
     dataset_path = Path(dataset_path)
 
     dataset = load_dataset(dataset_path)
+    print(f"Dataset loaded:\n{dataset.head()}")
+
     preference_information = load_preference_information(dataset_path)
+    print(f"Preference information loaded:\n{preference_information}")
 
     marginal_preference_matrix = calculate_marginal_preference_matrix(
         dataset, preference_information
     )
+    print(f"Marginal preference matrix calculated:\n{marginal_preference_matrix}")
+
     comprehensive_preference_matrix = calculate_comprehensive_preference_index(
         marginal_preference_matrix, preference_information
     )
+    print(f"Comprehensive preference matrix calculated:\n{comprehensive_preference_matrix}")
 
     positive_flow = calculate_positive_flow(
         comprehensive_preference_matrix, dataset.index
     )
+    print(f"Positive flow calculated:\n{positive_flow}")
+
     negative_flow = calculate_negative_flow(
         comprehensive_preference_matrix, dataset.index
     )
+    print(f"Negative flow calculated:\n{negative_flow}")
 
     assert positive_flow.index.equals(negative_flow.index)
 
     partial_ranking = create_partial_ranking(positive_flow, negative_flow)
-    display_ranking(partial_ranking, "Promethee I")
+    print(f"Partial ranking (Promethee I) created:\n{partial_ranking}")
 
     net_flow = calculate_net_flow(positive_flow, negative_flow)
-    complete_ranking = create_complete_ranking(net_flow)
-    display_ranking(complete_ranking, "Promethee II")
+    print(f"Net flow calculated:\n{net_flow}")
 
+    complete_ranking = create_complete_ranking(net_flow)
+    print(f"Complete ranking (Promethee II) created:\n{complete_ranking}")
+
+    display_ranking(partial_ranking, "Promethee I")
+    display_ranking(complete_ranking, "Promethee II")
+    
 
 if __name__ == "__main__":
     main()

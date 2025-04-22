@@ -124,9 +124,9 @@ def calculate_marginal_discordance_matrix(
                 b_val = dataset.iloc[j][criterion]
 
                 if crit_type == "gain":
-                    diff = b_val - a_val
-                elif crit_type == "cost":
                     diff = a_val - b_val
+                elif crit_type == "cost":
+                    diff = b_val - a_val
                 else:
                     raise ValueError(f"Unknown criterion type: {crit_type}")
 
@@ -159,6 +159,9 @@ def calculate_credibility_index(
 
     for i in range(num_alternatives):
         for j in range(num_alternatives):
+            if i == j:
+                credibility_matrix[i, j] = 0
+                continue
             C_ab = comprehensive_concordance_matrix[i, j]
             product = 1.0
 
@@ -213,7 +216,7 @@ def descending_distillation(
                 if i == j:
                     continue
                 a, b = A[i], A[j]
-                if credibility_index[i, j] > lambda_k_next and credibility_index[i, j] > credibility_index[j, i] + alpha * credibility_index[i, j] + beta:
+                if credibility_index[i, j] > lambda_k and credibility_index[i, j] > credibility_index[j, i] + alpha * credibility_index[i, j] + beta:
                     P.loc[a, b] = 1
                     strength[a] += 1
                     weakness[b] += 1
@@ -222,7 +225,7 @@ def descending_distillation(
         Dk1 = quality[quality == quality.max()].index
 
         if len(Dk1) > 1:
-            lambda_kh = lambda_k_next
+            lambda_kh = lambda_k
             Dh_prev = Dk1.copy()
 
             while True:
@@ -233,7 +236,7 @@ def descending_distillation(
                 non_diag = submatrix[np.triu_indices(len(Dh_prev), k=1)]
                 lambda_kh1 = np.max(non_diag[non_diag < lambda_kh - skh], initial=0)
 
-                if lambda_kh1 == 0:
+                if lambda_kh == 0:
                     DkF = Dh_prev
                     break
 
@@ -248,7 +251,7 @@ def descending_distillation(
                         val_ab = credibility_index[alternatives.get_loc(a), alternatives.get_loc(b)]
                         val_ba = credibility_index[alternatives.get_loc(b), alternatives.get_loc(a)]
 
-                        if val_ab > lambda_kh1 and val_ab > val_ba + alpha * val_ab + beta:
+                        if val_ab > lambda_kh and val_ab > val_ba + alpha * val_ab + beta:
                             strength[a] += 1
                             weakness[b] += 1
 
@@ -408,28 +411,36 @@ def main(dataset_path: str) -> None:
     dataset_path = Path(dataset_path)
 
     dataset = load_dataset(dataset_path)
-    preference_information = load_preference_information(dataset_path)
+    print(f"Dataset loaded with {dataset.shape[0]} alternatives and {dataset.shape[1]} criteria.")
+    print(f"Dataset:\n{dataset}")
 
-    marginal_concordance_matrix = calculate_marginal_concordance_matrix(
-        dataset, preference_information
-    )
-    comprehensive_concordance_matrix = calculate_comprehensive_concordance_matrix(
-        marginal_concordance_matrix, preference_information
-    )
-    marginal_discordance_matrix = calculate_marginal_discordance_matrix(
-        dataset, preference_information
-    )
-    credibility_index = calculate_credibility_index(
-        comprehensive_concordance_matrix, marginal_discordance_matrix
-    )
+    preference_information = load_preference_information(dataset_path)
+    print(f"Preference information loaded with {preference_information.shape[0]} criteria.")
+    print(f"Preference information:\n{preference_information}")
+
+    marginal_concordance_matrix = calculate_marginal_concordance_matrix(dataset, preference_information)
+    print(f"Marginal concordance matrix:\n{marginal_concordance_matrix}")
+
+    comprehensive_concordance_matrix = calculate_comprehensive_concordance_matrix(marginal_concordance_matrix, preference_information)
+    print(f"Comprehensive concordance matrix:\n{comprehensive_concordance_matrix}")
+
+    marginal_discordance_matrix = calculate_marginal_discordance_matrix(dataset, preference_information)
+    print(f"Marginal discordance matrix:\n{marginal_discordance_matrix}")
+
+    credibility_index = calculate_credibility_index(comprehensive_concordance_matrix, marginal_discordance_matrix)
+    print(f"Credibility index:\n{credibility_index}")
 
     descending_ranking = descending_distillation(credibility_index, dataset.index)
-    display_ranking(descending_ranking, "Descending Ranking")
-
+    print(f"Descending ranking:\n{descending_ranking}")
+    
     ascending_ranking = ascending_distillation(credibility_index, dataset.index)
-    display_ranking(ascending_ranking, "Ascending Ranking")
+    print(f"Ascending ranking:\n{ascending_ranking}")
 
     final_ranking = create_final_ranking(descending_ranking, ascending_ranking)
+    print(f"Final ranking:\n{final_ranking}")
+    
+    display_ranking(descending_ranking, "Descending Ranking")
+    display_ranking(ascending_ranking, "Ascending Ranking")
     display_ranking(final_ranking, "Final Ranking")
 
 
