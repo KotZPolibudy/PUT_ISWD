@@ -16,6 +16,9 @@ cd projekt2
 python -m electre_iii_pl.main ./electre_iii_pl/data/lecture
 python -m promethee_pl.main ./promethee_pl/data/lecture
 
+lub dla prostoty:
+python -m electre_iii_pl.main ./electre_iii_pl/data/lecture; python -m promethee_pl.main ./promethee_pl/data/lecture
+
 Jeżeli chcesz wykonać na swoim zbiorze danych przygotowanym (z określonymi kryteriami dla wybranych kolumn i określonym ziarnie losowania):
 cd projekt2
 python create_dataset.py

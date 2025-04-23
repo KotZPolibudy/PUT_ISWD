@@ -42,6 +42,23 @@ def main(num_samples=10):
         full_path = os.path.join(path, file_name)
         sampled_df.to_csv(full_path)
         print(f"Saved {num_samples} sampled alternatives to {full_path}")
+        
+    preferences = []
+    for a1 in sampled_df.index:
+        for a2 in sampled_df.index:
+            flag = True
+            for criterion in sampled_df.columns:
+                a1_value = sampled_df.loc[a1, criterion]
+                a2_value = sampled_df.loc[a2, criterion]
+                if criterion == "pesticide_usage_ml":
+                    if a2_value < a1_value:
+                        flag = False
+                else:
+                    if a1_value < a2_value:
+                        flag = False
+            if flag and a1 != a2:
+                preferences.append((a1, a2))
+    print(f"\nPreferences for sampled alternatives:{preferences}")
 
 if __name__ == "__main__":
     main()
