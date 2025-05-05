@@ -3,13 +3,18 @@ from player import Player
 
 
 class MySecondPlayer(Player):
-    checkProb = 0.2  # może da się zmieniać na bieżąco?
-    shouldCheat = 0.001
-    cheat = False
-    randomlyPlayTopCard = 0.02
-    learningRate = 0.1
-    roundsCounter = 0
-    cardsOnPile = []
+
+    def __init__(self, name):
+
+        super().__init__(name)
+        # startowe wartości
+        self.shouldCheat = 0.2
+        self.checkProb = 0.2
+        self.cheat = False
+        self.randomlyPlayTopCard = 0.02
+        self.learningRate = 0.3
+        self.roundsCounter = 0
+        # cardsOnPile = []
 
     # player's random strategy
     def putCard(self, declared_card):
@@ -67,13 +72,45 @@ class MySecondPlayer(Player):
 
         return card, declaration
 
-    ### randomly decides whether to check or not
+    # randomly decides whether to check or not
     def checkCard(self, opponent_declaration):
         if opponent_declaration in self.cards:
             return True
         return np.random.choice([True, False], p=[self.checkProb, 1 - self.checkProb])
 
+    # Notification sent at the end of a round
+    # One may implement this method, capture data, and use it to get extra info
+    # -- checked = TRUE -> someone checked. If FALSE, the remaining inputs do not play any role
+    # -- iChecked = TRUE -> I decided to check my opponent (so it was my turn);
+    #               FALSE -> my opponent checked and it was his turn
+    # -- iDrewCards = TRUE -> I drew cards (so I checked but was wrong or my opponent checked and was right);
+    #                 FALSE -> otherwise
+    # -- revealedCard - some card (X, Y). Only if I checked.
+    # -- noTakenCards - number of taken cards
     def getCheckFeedback(self, checked, iChecked, iDrewCards, revealedCard, noTakenCards, log=True):
-        # print("GotFeedback!")
         self.roundsCounter += 1
+        self.learningRate = 1 / self.roundsCounter
+        # noTakenCards - użyć do pamiętania co jest na stosiku ;)
+        if checked:
+            if iChecked:
+                # I Checked
+                if iDrewCards:
+                    # I checked and I was wrong, so I should check less often
+                    self.checkProb = max(0.01, self.checkProb - self.learningRate)
+                else:
+                    # I checked and I was right, so I should check more often (?)
+                    self.checkProb = min(0.99, self.checkProb + self.learningRate)
+            else:
+                # My opponent checked
+                # so I should cheat less often
+                self.shouldCheat = max(0.01, self.shouldCheat - self.learningRate)
 
+        else:
+            # No one checked
+            # so maybe I should cheat more often?
+            self.shouldCheat = min(0.99, self.shouldCheat + self.learningRate)  # do dopasowania wartości
+
+        # print(f"Round: {self.roundsCounter}, checkProb: {self.checkProb}, shouldCheat: {self.shouldCheat}")
+
+# W ogólności, to daje możliwości pamiętania ile wie mój przeciwnik i jakie karty widział etc.
+# jeszcze tego nie zrobię, ale może się przydać,
