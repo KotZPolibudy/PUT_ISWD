@@ -2,11 +2,14 @@ import numpy as np
 from player import Player
 
 
-class MyFirstPlayer(Player):
-    checkProb = 0.2
+class MySecondPlayer(Player):
+    checkProb = 0.2  # może da się zmieniać na bieżąco?
     shouldCheat = 0.001
     cheat = False
     randomlyPlayTopCard = 0.02
+    learningRate = 0.1
+    roundsCounter = 0
+    cardsOnPile = []
 
     # player's random strategy
     def putCard(self, declared_card):
@@ -38,12 +41,9 @@ class MyFirstPlayer(Player):
                 declaration = (
                     self.cards[-1][0], self.cards[-1][1])  # zmienic na randomowa z kart z reki, ktora > declared card
             else:
-                # declaration = (self.cards[0][0], self.cards[0][1]) #TUUU był error
                 declaration = (min(declared_card[0] + 1, 14), np.random.choice([0, 1, 2, 3]))  # losowe kłamstwo
-                # return "draw" # wow, ale najgorzej, ale to chyba sytuacja gdzie przeciwnik
-                # i tak widzi cały stosik, więc nie wiem czy jest sens kłamać.
-                # (tho kłamałbym for the record jak ktoś nie sprawdza)
 
+        # Play legit move
         else:
             if np.random.choice([True, False], p=[self.randomlyPlayTopCard, 1 - self.randomlyPlayTopCard]):
                 # randomly play the top card
@@ -72,3 +72,8 @@ class MyFirstPlayer(Player):
         if opponent_declaration in self.cards:
             return True
         return np.random.choice([True, False], p=[self.checkProb, 1 - self.checkProb])
+
+    def getCheckFeedback(self, checked, iChecked, iDrewCards, revealedCard, noTakenCards, log=True):
+        # print("GotFeedback!")
+        self.roundsCounter += 1
+
