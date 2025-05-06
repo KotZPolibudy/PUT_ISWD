@@ -5,7 +5,6 @@ from player import Player
 class MySecondPlayerOptim(Player):
 
     def __init__(self, name):
-
         super().__init__(name)
         # startowe wartości
         self.shouldCheat = 0.2
@@ -14,65 +13,57 @@ class MySecondPlayerOptim(Player):
         self.randomlyPlayTopCard = 0.02
         self.learningRate = 0.3
         self.roundsCounter = 0
-        # cardsOnPile = []
 
-    # player's random strategy
     def putCard(self, declared_card):
-        # never return "draw" :))
         self.cards.sort(key=lambda x: x[0])
         self.cheat = False
 
-        # check if maybe i want to randomly cheat
-        # check if i have to cheat if no legal moves other than draw available
+        # pierwszy ruch
+        if declared_card is None:
+            return self.cards[0], (self.cards[0][0], self.cards[0][1])
 
-        # NEVER DRAW - ale gra mówi, że ostatnia karta jest publiczna? huh?
-        if len(self.cards) == 1 and declared_card is not None and self.cards[0][0] < declared_card[0]:
-            return "draw"
-
-        # to nie pierwszy ruch, ale nie mam karty, ktora moge zagrac
-        # i nie jest to ostatnia karta
-        if len(self.cards) != 1 and declared_card is not None and self.cards[0][0] < declared_card[0]:
-            if np.random.choice([True, False], p=[self.shouldCheat, 1 - self.shouldCheat]):
-                self.cheat = True
+        # ostatni ruch
+        if len(self.cards) == 1:
+            if self.cards[0][0] < declared_card[0]:
+                return "draw"
+            else:
+                return self.cards[0], (self.cards[0][0], self.cards[0][1])
 
         # nie mam czego zagrac
-        if len(self.cards) != 1 and declared_card is not None and self.cards[-1][0] < declared_card[0]:
-            self.cheat = True
-
-        # then play a card and declare a card
-        if self.cheat:
+        if self.cards[-1][0] < declared_card[0]:
             card = self.cards[0]
             if declared_card[0] < self.cards[-1][0]:
-                declaration = (
-                    self.cards[-1][0], self.cards[-1][1])  # zmienic na randomowa z kart z reki, ktora > declared card
-            else:
-                declaration = (min(declared_card[0] + 1, 14), np.random.choice([0, 1, 2, 3]))  # losowe kłamstwo
-
-        # Play legit move
-        else:
-            if np.random.choice([True, False], p=[self.randomlyPlayTopCard, 1 - self.randomlyPlayTopCard]):
-                # randomly play the top card
-                card = self.cards[-1]
+                # zmienic na randomowa z kart z reki, ktora > declared card i porownac
                 declaration = (self.cards[-1][0], self.cards[-1][1])
             else:
-                # play the lowest possible card
-                if declared_card is not None:
+                declaration = (min(declared_card[0] + 1, 14), np.random.choice([0, 1, 2, 3]))
+            return card, declaration
+
+        # zwykły ruch
+        if self.cards[0][0] < declared_card[0]:
+            if np.random.choice([True, False], p=[self.shouldCheat, 1 - self.shouldCheat]):
+                card = self.cards[0]
+                if declared_card[0] < self.cards[-1][0]:
+                    # zmienic na randomowa z kart z reki, ktora > declared card i porownac
+                    declaration = (self.cards[-1][0], self.cards[-1][1])
+                else:
+                    declaration = (min(declared_card[0] + 1, 14), np.random.choice([0, 1, 2, 3]))
+                return card, declaration
+            else:
+                # legit move
+                if np.random.choice([True, False], p=[self.randomlyPlayTopCard, 1 - self.randomlyPlayTopCard]):
+                    # randomly play the top card
+                    return self.cards[-1], (self.cards[-1][0], self.cards[-1][1])
+                else:
+                    # play the lowest possible card
                     min_val = declared_card[0]
                     for lookForaCard in self.cards:
                         if lookForaCard[0] < min_val:
                             continue
                         else:
-                            card = lookForaCard
-                            declaration = (lookForaCard[0], lookForaCard[1])
-                            break
-                else:
-                    # first turn - play the lowest card
-                    card = self.cards[0]
-                    declaration = (self.cards[0][0], self.cards[0][1])
+                            return lookForaCard, (lookForaCard[0], lookForaCard[1])
+        return "draw"  # never return draw ;)
 
-        return card, declaration
-
-    # randomly decides whether to check or not
     def checkCard(self, opponent_declaration):
         if opponent_declaration in self.cards:
             return True
@@ -90,27 +81,13 @@ class MySecondPlayerOptim(Player):
     def getCheckFeedback(self, checked, iChecked, iDrewCards, revealedCard, noTakenCards, log=True):
         self.roundsCounter += 1
         self.learningRate = 1 / self.roundsCounter
-        # noTakenCards - użyć do pamiętania co jest na stosiku ;)
         if checked:
             if iChecked:
-                # I Checked
                 if iDrewCards:
-                    # I checked and I was wrong, so I should check less often
                     self.checkProb = max(0.01, self.checkProb - self.learningRate)
                 else:
-                    # I checked and I was right, so I should check more often (?)
                     self.checkProb = min(0.99, self.checkProb + self.learningRate)
             else:
-                # My opponent checked
-                # so I should cheat less often
                 self.shouldCheat = max(0.01, self.shouldCheat - self.learningRate)
-
         else:
-            # No one checked
-            # so maybe I should cheat more often?
             self.shouldCheat = min(0.99, self.shouldCheat + self.learningRate)  # do dopasowania wartości
-
-        # print(f"Round: {self.roundsCounter}, checkProb: {self.checkProb}, shouldCheat: {self.shouldCheat}")
-
-# W ogólności, to daje możliwości pamiętania ile wie mój przeciwnik i jakie karty widział etc.
-# jeszcze tego nie zrobię, ale może się przydać,
