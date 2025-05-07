@@ -2,15 +2,15 @@ import numpy as np
 from player import Player
 
 
-class KociakProba3(Player):
+class KociakAdapt(Player):
     def __init__(self, name):
 
         super().__init__(name)
         self.shouldCheat = 0.3
         self.knownCards = set()
-        self.checkProb = 0.2
+        self.checkProb = 0.0
         self.roundCounter = 1
-        self.lr = 0.5
+        self.learningRate = 0.5
 
     def putCard(self, declared_card):
         self.cards.sort(key=lambda x: x[0])
@@ -73,6 +73,8 @@ class KociakProba3(Player):
     def checkCard(self, opponent_declaration):
         if opponent_declaration in self.cards:
             return True
+        elif self.roundCounter < 5:
+            return False
         elif opponent_declaration in self.knownCards:  # to dość złudne, chyba jednak nie 100% false...
             return False
         elif opponent_declaration not in self.knownCards:
@@ -81,14 +83,14 @@ class KociakProba3(Player):
             if l >= 15:
                 return True
             elif l > 13:
-                self.checkProb = 0.8
+                cp = min(max(0.7 + self.checkProb, 0.0), 0.9)
             elif l > 12:
-                self.checkProb = 0.5
+                cp = min(max(0.5 + self.checkProb, 0.0), 0.9)
             elif l > 10:
-                self.checkProb = 0.3
+                cp = min(max(0.3 + self.checkProb, 0.0), 0.9)
             else:
-                self.checkProb = 0.1
-            return np.random.choice([True, False], p=[self.checkProb, 1 - self.checkProb])
+                cp = min(max(0.1 + self.checkProb, 0.0), 0.9)
+            return np.random.choice([True, False], p=[cp, 1 - cp])
 
     # Notification sent at the end of a round
     # One may implement this method, capture data, and use it to get extra info
@@ -104,4 +106,24 @@ class KociakProba3(Player):
             self.knownCards.add(revealedCard)
         self.knownCards.update(self.cards)
         self.roundCounter += 1
-        self.lr = 1/self.roundCounter
+        self.learningRate = 1/self.roundCounter
+        # the adapt is back
+
+        if checked:
+            if iChecked:
+                # I Checked
+                if iDrewCards:
+                    # I checked and I was wrong, so I should check less often
+                    self.checkProb = max(0.01, self.checkProb - self.learningRate)
+                else:
+                    # I checked and I was right, so I should check more often (?)
+                    self.checkProb = min(0.99, self.checkProb + self.learningRate)
+            else:
+                # My opponent checked
+                # so I should cheat less often
+                self.shouldCheat = max(0.01, self.shouldCheat - self.learningRate)
+
+        else:
+            # No one checked
+            # so maybe I should cheat more often?
+            self.shouldCheat = min(0.99, self.shouldCheat + self.learningRate)
