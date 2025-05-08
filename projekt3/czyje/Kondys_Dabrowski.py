@@ -133,4 +133,4 @@ class Kondys_Dabrowski(Player):
             case 14:
                 prob = 0.9
         
-        return np.random.choice([True, False], p = [prob, 1-prob])
+        return np.random.choice([True, False], p=[prob, 1-prob])
