@@ -8,20 +8,17 @@ class Kotter(Player):
         super().__init__(name)
         self.opponent_number_of_cards = 8
         self.pile = []
-        self.moves = 0
-        self.checked = False
-        self.deck = []
+        self.checked_flag = False
 
     def putCard(self, declared_card):
-        self.moves += 1
-        if declared_card is not None:
-            self.deck.append((-declared_card[0], declared_card[1]))
-        if self.checked:
-            self.checked = False
-        elif declared_card is None:
-            self.opponent_number_of_cards += min(3, len(self.deck))
-            self.deck = self.deck[:-min(3, len(self.deck))]
-        else:
+        if declared_card is not None:  # przeciwnik zagrał
+            self.pile.append((-declared_card[0], declared_card[1]))
+        if self.checked_flag:
+            self.checked_flag = False
+        if not self.checked_flag and declared_card is None:  # przeciwnik zrobił draw
+            self.opponent_number_of_cards += min(3, len(self.pile))
+            self.pile = self.pile[:-min(3, len(self.pile))]
+        else:  # przeciwnik zagrał kartę
             self.opponent_number_of_cards -= 1
         under = []
         over = []
@@ -50,9 +47,9 @@ class Kotter(Player):
             return True  # mam te kartę
         if self.opponent_number_of_cards <= 2:
             return True  # jego ostatnia karta
-        if opponent_declaration in self.deck:
+        if opponent_declaration in self.pile:
             return True  # nie masz jej, bo ją zagrałem!
-        # if len(self.cards) + len(self.deck) >= 14:
+        # if len(self.cards) + len(self.pile) >= 14: # warunek do poprawy czy w known_cards
         #     return False  # no dobra, możesz to mieć
         # if opponent_declaration[0] < 11:
         #     prob = 0.0
@@ -66,7 +63,7 @@ class Kotter(Player):
     def getCheckFeedback(self, checked, iChecked, iDrewCards, revealedCard, noTakenCards, log=True):
         if checked and not iDrewCards:
             self.opponent_number_of_cards += noTakenCards - 1
-            self.deck = self.deck[:-(noTakenCards - 1)]
-            self.checked = True
+            self.pile = self.pile[:-(noTakenCards - 1)]
+            self.checked_flag = True
         elif checked and iDrewCards:
-            self.deck = self.deck[:-noTakenCards]
+            self.pile = self.pile[:-noTakenCards]
