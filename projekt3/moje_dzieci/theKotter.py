@@ -20,27 +20,33 @@ class Kotter(Player):
             self.pile = self.pile[:-min(3, len(self.pile))]
         else:  # przeciwnik zagrał kartę
             self.opponent_number_of_cards -= 1
-        under = []
-        over = []
-        myCards = self.cards.copy()
-        myCards.sort(key=lambda x: x[0])
-        if declared_card is not None:
-            for x in myCards:
-                if x[0] < declared_card[0]:
-                    under.append(x)
-                else:
-                    over.append(x)
-        else:
-            over = myCards
-        if len(under) == 0:
-            return over[0], over[0]
-        if len(self.cards) == 1 and len(over) == 0:
+
+        self.cards.sort(key=lambda x: x[0])
+        if declared_card is None or self.cards[0][0] >= declared_card[0]:
+            return self.cards[0], self.cards[0]  # wszystkie karty grają — zagraj najmniejszą.
+        if len(self.cards) == 1 and self.cards[0][0] < declared_card[0]:  # ta druga czesc useless? -optim.
             return "draw"
-        if len(over) == 0:
-            return under[0], (declared_card[0], (declared_card[1] + 1) % 4)
-        if float(len(over)) / len(under) <= 1:
-            return under[0], over[0]
-        return over[0], over[0]
+
+        fake_declaration = (min(declared_card[0] + 1, 14), np.random.choice([0, 1, 2, 3]))
+        if self.cards[-1][0] < declared_card[0]:
+            return self.cards[0], fake_declaration
+        else:
+            nonLegitCount = 0
+            legitCount = 0
+            for lookForaCard in self.cards:
+                if lookForaCard[0] < declared_card[0]:
+                    nonLegitCount += 1
+                    continue
+                else:
+                    fake_declaration = lookForaCard
+                    legitCount = len(self.cards) - nonLegitCount
+            if nonLegitCount - legitCount > 2:
+                return self.cards[0], fake_declaration
+
+        # legit ruch najmniejszej możliwej
+        for lookForaCard in self.cards:
+            if lookForaCard[0] >= declared_card[0]:
+                return lookForaCard, lookForaCard
 
     def checkCard(self, opponent_declaration):
         if opponent_declaration in self.cards:
