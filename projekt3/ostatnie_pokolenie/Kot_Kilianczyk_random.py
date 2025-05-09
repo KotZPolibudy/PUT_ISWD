@@ -40,7 +40,8 @@ class Kot_Kilianczyk_random(Player):
         if len(legit) == 0:
             return lower[0], (min(declared_card[0] + 1, 14), np.random.choice([0, 1, 2, 3]))  # trzeba kłamać, to będę
         if len(legit) - len(lower) < 0:
-            idx = np.random.randint(len(legit))
+            # return lower[0], legit[0]
+            idx = np.random.randint(len(legit)) # to się zmieniło od base wersji
             return lower[0], legit[idx]  # ej, ale trzeba się pozbyć tych niskich kart...
         return legit[0], legit[0]
 

@@ -41,6 +41,8 @@ class Kot_Kilianczyk(Player):
             return lower[0], (min(declared_card[0] + 1, 14), np.random.choice([0, 1, 2, 3]))  # trzeba kłamać, to będę
         if len(legit) - len(lower) < 0:
             return lower[0], legit[0]  # ej, ale trzeba się pozbyć tych niskich kart...
+            # idx = np.random.randint(len(legit))  # to się zmieniło od base wersji
+            # return lower[0], legit[idx]  # jednak wracamy do tamtego, chyba jest lepsze, ale nie wiem
         return legit[0], legit[0]
 
     def checkCard(self, opponent_declaration):
