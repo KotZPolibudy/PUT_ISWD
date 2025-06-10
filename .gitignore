@@ -173,3 +173,4 @@ cython_debug/
 *.aux
 *.out
 *.gz
+/projekt5/DEA_lab.ipynb
