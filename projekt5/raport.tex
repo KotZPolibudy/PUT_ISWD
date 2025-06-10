@@ -80,14 +80,22 @@ IEG & 0.03 & 0.39 & 1.11 & 0.06 & 0.07 & 9.61 & 62.29 & 2.94 \\
 
 Otrzymane wartości superefektywności dla lotnisk w tabeli poniżej.
 
-\textcolor{blue}{TODO - TO JEST ABSOLUTNIE ŹLE POLICZONE}
-
 \begin{table}[H]
     \centering
     \begin{tabular}{c|c}
     \hline
          Lotnisko & Superefektywność  \\ \hline
-         WAW & ...\\
+         WAW & 2.278 \\
+KRK & 1.124 \\
+KAT & 0.591 \\
+WRO & 1.040 \\
+POZ & 0.800 \\
+LCJ & 0.300 \\
+GDN & 2.000 \\
+SZZ & 0.271 \\
+BZG & 1.746 \\
+RZE & 0.409 \\
+IEG & 0.258 \\
          \hline
     \end{tabular}
     \caption{Wartości superefektywności dla analizowanych lotnisk}
@@ -96,40 +104,68 @@ Otrzymane wartości superefektywności dla lotnisk w tabeli poniżej.
 
 \section{Efektywność krzyżowa}
 
-\textcolor{blue}{W poniższej tabeli przedstaw macierz efektywności krzyżowych dla wszystkich lotnisk oraz ich średnie efektywności krzyżowa.}    
+W poniższej tabeli macierz efektywności krzyżowych dla wszystkich lotnisk oraz ich średnie efektywności krzyżowa.
 
 \begin{table}[H]
 \resizebox{\textwidth}{!}{
 \begin{tabular}{c|ccccccccccc|c}
 \hline
 & WAW & KRK & KAT & WRO & POZ & LCJ & GDN &SZZ & BZG & RZE & IEG & $CR_{avg}$ \\ \hline
-WAW & 1.000 & \ldots & \ldots & \ldots & \ldots & \ldots & \ldots & \ldots & \ldots & \ldots & \ldots & \ldots \\
-\ldots & \ldots & \ldots & \ldots & \ldots & \ldots & \ldots & \ldots & \ldots & \ldots & \ldots & \ldots & \ldots \\ 
+WAW & 1.000 & 1.000 & 0.913 & 1.000 & 1.000 & 0.595 & 0.452 & 1.000 & 0.595 & 0.903 & 0.523 & 0.816 \\
+KRK & 0.806 & 1.000 & 1.000 & 1.000 & 1.000 & 0.491 & 0.468 & 0.755 & 0.491 & 0.996 & 0.428 & 0.767 \\
+KAT & 0.469 & 0.575 & 0.591 & 0.563 & 0.563 & 0.278 & 0.333 & 0.371 & 0.278 & 0.591 & 0.248 & 0.442 \\
+WRO & 0.748 & 0.965 & 1.000 & 1.000 & 1.000 & 0.605 & 0.500 & 0.856 & 0.605 & 1.000 & 0.531 & 0.801 \\
+POZ & 0.716 & 0.793 & 0.774 & 0.800 & 0.800 & 0.512 & 0.433 & 0.737 & 0.512 & 0.770 & 0.458 & 0.664 \\
+LCJ & 0.202 & 0.240 & 0.259 & 0.255 & 0.255 & 0.300 & 0.250 & 0.273 & 0.300 & 0.261 & 0.297 & 0.263 \\
+GDN & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 \\
+SZZ & 0.222 & 0.234 & 0.238 & 0.243 & 0.243 & 0.261 & 0.214 & 0.271 & 0.261 & 0.238 & 0.254 & 0.244 \\
+BZG & 0.404 & 0.721 & 0.972 & 0.909 & 0.909 & 1.000 & 0.500 & 1.000 & 1.000 & 1.000 & 0.876 & 0.845 \\
+RZE & 0.327 & 0.396 & 0.409 & 0.403 & 0.403 & 0.273 & 0.250 & 0.346 & 0.273 & 0.409 & 0.247 & 0.340 \\
+IEG & 0.005 & 0.003 & 0.002 & 0.006 & 0.006 & 0.078 & 0.025 & 0.036 & 0.078 & 0.002 & 0.258 & 0.045 \\
 \hline
 \end{tabular}}
 \label{tab:airports-cross-efficiency}
 \end{table}
             
 \section{Rozkład efektywności}
-\textcolor{blue}{W tej sekcji pokaż wyniki rozkładu efektywności (podział na 5 przedziałów) oraz oszacowaną oczekiwaną wartość efektywności dla wszystkich lotnisk.}
+W tej sekcji wyniki rozkładu efektywności (podział na 5 przedziałów) oraz oszacowana oczekiwana wartość efektywności dla wszystkich lotnisk.
 \begin{table}[H]
 \begin{tabular}{c|ccccc|c}
 \hline
     & $[0-0.2)$ & $[0.2-0.4)$ & $[0.4-0.6)$ & $[0.6-0.8)$ & $[0.8-1.0]$ & $EE$    \\ \hline
-WAW & 0.00      & \ldots & \ldots & \ldots & \ldots & \ldots \\
-\ldots & \ldots & \ldots & \ldots & \ldots & \ldots & \ldots \\
+WAW & 0.00 & 0.00 & 0.36 & 0.00 & 0.64 & 0.80 \\
+KRK & 0.00 & 0.00 & 0.36 & 0.18 & 0.45 & 0.75 \\
+KAT & 0.00 & 0.45 & 0.55 & 0.00 & 0.00 & 0.43 \\
+WRO & 0.00 & 0.00 & 0.18 & 0.27 & 0.55 & 0.78 \\
+POZ & 0.00 & 0.00 & 0.36 & 0.64 & 0.00 & 0.65 \\
+LCJ & 0.00 & 1.00 & 0.00 & 0.00 & 0.00 & 0.26 \\
+GDN & 0.00 & 0.00 & 0.00 & 0.00 & 1.00 & 1.00 \\
+SZZ & 0.00 & 1.00 & 0.00 & 0.00 & 0.00 & 0.24 \\
+BZG & 0.00 & 0.00 & 0.18 & 0.09 & 0.73 & 0.83 \\
+RZE & 0.00 & 0.73 & 0.27 & 0.00 & 0.00 & 0.33 \\
+IEG & 1.00 & 0.00 & 0.00 & 0.00 & 0.00 & 0.03 \\
 \hline
 \end{tabular}
 \label{tab:efficiency-distribution}
 \end{table}
 
 \section{Rankingi jednostek}
-\textcolor{blue}{Przedstaw i porównaj rankingi lotnisk uzyskane różnymi metodami (superefektywność, średnia efektywność krzyżowa oraz oczekiwana wartość efektywności).}
+Rankingi lotnisk uzyskane różnymi metodami (superefektywność, średnia efektywność krzyżowa oraz oczekiwana wartość efektywności).
 
-\noindent Superefektywność: $WAW \succ \ldots \succ \ldots$ \\
-Średnia efektywność krzyżowa: \ldots \\
-Oczekiwana wartość efektywności: \ldots \\
+\noindent Superefektywność: $WAW \succ GDN \succ BZG \succ KRK \succ WRO \succ POZ \succ KAT \succ RZE \succ LCJ \succ SZZ \succ IEG$ \\
+Średnia efektywność krzyżowa: $GDN \succ BZG \succ WAW \succ WRO \succ KRK \succ POZ \succ KAT \succ RZE \succ LCJ \succ SZZ \succ IEG$ \\
+Oczekiwana wartość efektywności: $WAW \succ KRK \succ WRO \succ BZG \succ GDN \succ POZ \succ KAT \succ RZE \succ LCJ \succ SZZ \succ IEG$ \\
 
-\textcolor{blue}{Tu przedstaw wnioski z porównania rankingów.}
+\section{Wnioski z porównania rankingów}
+
+    Przede wszystkim rzucające się w oczy jest to, że każdy z rankingów kończy się tą samą sekwencją:\\
+    $POZ \succ KAT \succ RZE \succ LCJ \succ SZZ \succ IEG$ \\
+    co sugeruje, że IEG (Zielona Góra) rzeczywiście będzie najmniej efektywnym lotniskiem, a wszystkie z tych lotnisk mają coś od poprawy, szczególnie te bliżej końca.
+
+    Dodatkowo, WAW (Warszawa) osiąga pierwsze miejsca w dwóch rankingach, i jedno trzecie, co sugeruje że jest liderem.\\
+    GDN plasuje się na pierwszym, drugim i raz na piątym miejscu, co również sugeruje jego silną pozycję.\\
+
+    Poza dwoma wyżej wymienionymi lotniskami, wysokie miejsca zajmują również BZG, KRK oraz WRO, co również sugeruje ich silną pozycję wśród lotnisk, ale nie tak silną jak wcześniej wymienionych.
+
 
 \end{document}
